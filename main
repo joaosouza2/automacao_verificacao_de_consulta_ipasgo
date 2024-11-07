@@ -1,0 +1,200 @@
+import logging
+import time
+import pandas as pd
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys  # Adicionado para uso do Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from selenium.webdriver.common.action_chains import ActionChains
+from openpyxl import load_workbook
+
+# Configuração de logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+class BaseAutomation:
+    def __init__(self):
+        """Configurações gerais do WebDriver."""
+        self.options = Options()
+        self.options.add_argument("--start-maximized")  # Maximiza a janela
+        self.driver = webdriver.Chrome(options=self.options)  # Inicializa o WebDriver com a opção de maximização
+
+    def wait_for_stability(self, timeout=10, check_interval=1):
+        """Espera pela estabilidade da altura da página."""
+        old_height = self.driver.execute_script("return document.body.scrollHeight;")
+        for _ in range(timeout):
+            time.sleep(check_interval)
+            new_height = self.driver.execute_script("return document.body.scrollHeight;")
+            if new_height == old_height:
+                break
+            old_height = new_height
+
+    def safe_click(self, by_locator):
+        """Tenta clicar no elemento várias vezes se for interceptado."""
+        for _ in range(3):
+            try:
+                element = WebDriverWait(self.driver, 5).until(EC.element_to_be_clickable(by_locator))
+                element.click()
+                logging.info(f"Elemento clicado com sucesso: {by_locator}")
+                return
+            except Exception as e:
+                time.sleep(1)
+        raise Exception("Não foi possível clicar no elemento após várias tentativas.")
+
+    def acessar_com_reattempt(self, by_locator, attempts=3):
+        """Tenta acessar um elemento várias vezes."""
+        for attempt in range(attempts):
+            try:
+                element = WebDriverWait(self.driver, 10).until(EC.element_to_be_clickable(by_locator))
+                logging.info(f"Elemento encontrado: {by_locator}")
+                return element
+            except TimeoutException as e:
+                logging.warning(f"Tentativa {attempt + 1} falhou. Tentando novamente...")
+                time.sleep(1)
+        raise Exception(f"Não foi possível acessar o elemento após {attempts} tentativas.")
+
+class verification_ipasgo(BaseAutomation):
+    def __init__(self):
+        super().__init__()
+        self.sheet_name = 'BaseSADT'
+        self.file_path = r"C:\Users\SUPERVISÃO ADM\Desktop\RPA_verificação_ipasgo\BASE_GUIAS_IPASGO_10-2024tTEST.xlsx"
+        self.df = pd.read_excel(self.file_path, sheet_name=self.sheet_name)
+        self.row_index = 0  # Inicie com o índice desejado
+
+    def get_excel_value(self, column_name):
+        try:
+            value = str(self.df[column_name].iloc[self.row_index])
+            return value
+        except KeyError:
+            logging.error(f"A coluna '{column_name}' não foi encontrada no arquivo Excel.")
+            return ""
+
+    def acessar_portal_ipasgo(self):
+        """Executa o fluxo principal do IPASGO."""
+        try:
+            self.driver.get("https://portalos.ipasgo.go.gov.br/Portal_Dominio/PrestadorLogin.aspx")
+            self.wait_for_stability(timeout=10)
+
+            matricula_input = self.acessar_com_reattempt((By.ID, "SilkUIFramework_wt13_block_wtUsername_wtUserNameInput2"))
+            matricula_input.send_keys("14898500")
+
+            senha_input = self.acessar_com_reattempt((By.ID, "SilkUIFramework_wt13_block_wtPassword_wtPasswordInput"))
+            senha_input.send_keys("Clmf2024")
+
+            self.safe_click((By.ID, "SilkUIFramework_wt13_block_wtAction_wtLoginButton"))
+
+            self.wait_for_stability(timeout=10)
+
+            link_portal_webplan = self.acessar_com_reattempt((By.XPATH, "//*[@id='IpasgoTheme_wt16_block_wtMainContent_wtSistemas_ctl08_SilkUIFramework_wt36_block_wtActions_wtModulos_SilkUIFramework_wt9_block_wtContent_wtModuloPortalTable_ctl04_wt2']/span"))
+            self.driver.execute_script("arguments[0].scrollIntoView(true);", link_portal_webplan)
+            time.sleep(2)
+            link_portal_webplan.click()
+
+            WebDriverWait(self.driver, 20).until(EC.number_of_windows_to_be(2))
+            self.driver.switch_to.window(self.driver.window_handles[1])
+
+            self.acessar_com_reattempt((By.ID, "menuPrincipal"))
+
+            time.sleep(4)
+
+            self.localizar_procedimentos()
+            self.Guia_operadora()
+            self.confirmar_procedimentos()
+
+        except Exception as e:
+            logging.error(f"Erro ao acessar o site ou preencher o formulário: {e}")
+            return
+
+    def localizar_procedimentos(self):
+        """Função para localizar e clicar no elemento 'localizar-procedimentos'."""
+        try:
+            logging.info("Localizando o menu de procedimentos.")
+            procedimentos_button = self.acessar_com_reattempt((By.CSS_SELECTOR, ".localizar-procedimentos-icon"))
+            self.driver.execute_script("arguments[0].scrollIntoView(true);", procedimentos_button)
+            procedimentos_button.click()
+            time.sleep(5)
+
+            # Verifica se o alerta aparece, e lida com ele se necessário
+            try:
+                logging.info("Verificando se o alerta está presente.")
+                alerta = WebDriverWait(self.driver, 5).until(EC.visibility_of_element_located((By.XPATH, '//*[@id="button-1"]')))
+                alerta.click()
+                logging.info("Alerta fechado com sucesso.")
+            except TimeoutException:
+                logging.info("Nenhum alerta encontrado, continuando o processo.")
+        except Exception as e:
+            logging.error(f"Erro ao acessar o menu de procedimentos: {e}")
+            
+
+    def Guia_operadora(self):
+        """Função para inserir o número da guia para localizar procedimento usando dados da planilha."""
+        try:
+            # Pegar o valor da coluna "Guia_Cod" na linha atual
+            numero_guia = self.get_excel_value('Guia_Cod')
+
+            # Localizar o campo de número da guia no site
+            logging.info("Localizando o campo de número da guia.")
+
+            # Tentar localizar o elemento usando um seletor mais robusto
+            guia_input = self.acessar_com_reattempt((By.CSS_SELECTOR, 'div.input-group > input.form-control.small'))
+
+            guia_input.send_keys(str(numero_guia))
+            logging.info("Número da guia preenchido com sucesso.")
+            time.sleep(2)
+
+             # Localizar o botão de pesquisa (ícone da lupa) usando XPath
+            logging.info("Localizando o botão de pesquisa.")
+            search_button = self.acessar_com_reattempt((By.XPATH, "//div[contains(@class, 'input-group')]//span[contains(@class, 'fa-search') and contains(@class, 'pointer')]"))
+
+            # Clicar no botão de pesquisa
+            search_button.click()
+            logging.info("Botão de pesquisa clicado com sucesso.")
+            time.sleep(2)
+
+            self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+            time.sleep(2)
+            self.driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+
+        except Exception as e:
+            logging.error(f"Erro ao tentar preencher o número da guia: {e}")
+
+
+
+    def confirmar_procedimentos(self):
+        """Função para confirmar procedimentos executados."""
+        try:
+            logging.info("Iniciando o processo de confirmação dos procedimentos.")
+
+            # Opcional: Se o botão de confirmação estiver dentro de um iframe, mude o contexto
+            # try:
+            #     iframe = self.driver.find_element(By.TAG_NAME, 'iframe')
+            #     self.driver.switch_to.frame(iframe)
+            #     logging.info("Mudou para o iframe com sucesso.")
+            # except NoSuchElementException:
+            #     logging.info("Nenhum iframe encontrado, continuando no contexto principal.")
+
+            # Localizar o botão de confirmação usando o XPath fornecido
+            confirmar_button = self.acessar_com_reattempt((By.XPATH, '//*[@id="localizarprocedimentos"]/div[2]/div/div[2]/div/div[2]/div[1]/div/div/div/div[2]/div[2]/div/div[1]/div/div[1]/div[2]/div/i[2]'))
+            logging.info("Botão de confirmação localizado com sucesso.")
+
+            # Clicar no botão de confirmação
+            confirmar_button.click()
+            logging.info("Botão de confirmação clicado com sucesso.")
+            time.sleep(2)
+
+            # Se necessário, lidar com qualquer modal ou pop-up que apareça após clicar
+            # Por exemplo, confirmar em uma janela modal
+            # modal_confirm_button = self.acessar_com_reattempt((By.XPATH, "//button[contains(text(), 'Confirmar')]"))
+            # modal_confirm_button.click()
+            # logging.info("Confirmação finalizada com sucesso.")
+
+        except Exception as e:
+            logging.error(f"Erro ao tentar confirmar os procedimentos: {e}")
+
+
+# Exemplo de execução
+if __name__ == "__main__":
+    automacao = verification_ipasgo()
+    automacao.acessar_portal_ipasgo()
