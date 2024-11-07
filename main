@@ -115,13 +115,24 @@ class VerificationIPASGO(BaseAutomation):
             self.acessar_com_reattempt((By.ID, "menuPrincipal"))
 
             time.sleep(4)
+#########################################################
+#chamando a função executar_fluxo: 
+#########################################################
+            self.executar_fluxo()
+        except Exception as e:
+            pass 
 
+
+    def executar_fluxo(self):
+        """Executa o fluxo de interações após o login no portal IPASGO."""
+        try:
             self.localizar_procedimentos()
             self.Guia_operadora()
             self.abrir_confirmar_procedimentos()
-
+            # Se desejar, pode adicionar mais funções aqui
         except Exception as e:
-            pass 
+            raise
+
 
     def scroll_and_click(self, element):
         """Rola a página para o elemento e clica nele."""
