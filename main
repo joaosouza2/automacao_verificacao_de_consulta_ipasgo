@@ -1,22 +1,74 @@
+import openpyxl
 import logging
 import time
 import pandas as pd
+import sys
+import os
+from pathlib import Path
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.ui import WebDriverWait, Select
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 # Configuração de logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
+# Definir um excepthook para capturar exceções não tratadas
+def excepthook(exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        # Permite que o KeyboardInterrupt seja tratado normalmente
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+    logging.error(f"Exceção não capturada: {exc_value}")
+
+sys.excepthook = excepthook
+
+class DataHandler:
+    def __init__(self, file_path, sheet_name):
+        self.file_path = file_path
+        self.sheet_name = sheet_name
+        self.df = pd.read_excel(file_path, sheet_name=sheet_name)
+        self.df.columns = [col.upper().strip() for col in self.df.columns]
+        if 'CONFIRMACOES' not in self.df.columns:
+            self.df['CONFIRMACOES'] = ''
+        if 'ERRO' not in self.df.columns:
+            self.df['ERRO'] = ''
+
+    def get_value(self, row_index, column_name):
+        """Obtém o valor de uma coluna específica em uma linha específica."""
+        try:
+            value = self.df.at[row_index, column_name.upper()]
+            return str(value) if not pd.isnull(value) else ""
+        except KeyError:
+            logging.error(f"A coluna '{column_name}' não foi encontrada.")
+            return ""
+
+    def update_value(self, row_index, column_name, value):
+        """Atualiza o valor de uma célula específica."""
+        try:
+            self.df.at[row_index, column_name.upper()] = value
+            logging.info(f"Valor atualizado na linha {row_index + 2}, coluna '{column_name}': {value}")
+        except KeyError:
+            logging.error(f"A coluna '{column_name}' não foi encontrada ao tentar atualizar o valor.")
+
+    def save(self):
+        """Salva o DataFrame de volta ao arquivo Excel."""
+        try:
+            # Salva no mesmo arquivo para evitar problemas
+            self.df.to_excel(self.file_path, sheet_name=self.sheet_name, index=False)
+            logging.info(f"Alterações salvas no arquivo Excel com sucesso: {self.file_path}")
+        except Exception as e:
+            error_message = getattr(e, 'message', str(e))
+            logging.error(f"Erro ao salvar o arquivo Excel: {error_message}")
+
 class BaseAutomation:
     def __init__(self):
         """Configurações gerais do WebDriver."""
         self.options = Options()
-        self.options.add_argument("--start-maximized")  
-        self.driver = webdriver.Chrome(options=self.options)  
+        self.options.add_argument("--start-maximized")
+        self.driver = webdriver.Chrome(options=self.options)
 
     def wait_for_stability(self, timeout=10, check_interval=1):
         """Espera pela estabilidade da altura da página."""
@@ -37,7 +89,8 @@ class BaseAutomation:
                 logging.info(f"Elemento clicado com sucesso: {by_locator}")
                 return
             except Exception as e:
-                logging.warning(f"Erro ao clicar no elemento: {e}")
+                error_message = getattr(e, 'msg', str(e))
+                logging.warning(f"Erro ao clicar no elemento: {error_message}")
                 time.sleep(1)
         raise Exception("Não foi possível clicar no elemento após várias tentativas.")
 
@@ -54,20 +107,17 @@ class BaseAutomation:
         raise Exception(f"Não foi possível acessar o elemento após {attempts} tentativas.")
 
 class VerificationIPASGO(BaseAutomation):
-    def __init__(self):
+    def __init__(self, data_handler):
         super().__init__()
-        self.sheet_name = 'BaseSADT'
-        self.file_path = r"C:\Users\SUPERVISÃO ADM\Desktop\RPA_verificação_ipasgo\BASE_GUIAS_IPASGO_10-2024tTEST.xlsx"
-        self.df = pd.read_excel(self.file_path, sheet_name=self.sheet_name)
+        self.data_handler = data_handler
         self.row_index = 0  # Inicie com o índice desejado
+
+        # Caminho para o arquivo txt onde as confirmações serão salvas
+        self.txt_file_path = r"C:\Users\SUPERVISÃO ADM\Desktop\RPA_verificação_ipasgo\salvamento_datas_confirmação.txt"
 
     def get_excel_value(self, column_name):
         """Obtém o valor de uma coluna específica na linha atual da planilha."""
-        try:
-            value = str(self.df[column_name].iloc[self.row_index])
-            return value
-        except KeyError:
-            return ""
+        return self.data_handler.get_value(self.row_index, column_name)
 
     def acessar_portal_ipasgo(self):
         """Executa o fluxo principal do IPASGO."""
@@ -76,10 +126,10 @@ class VerificationIPASGO(BaseAutomation):
             self.wait_for_stability(timeout=10)
 
             matricula_input = self.acessar_com_reattempt((By.ID, "SilkUIFramework_wt13_block_wtUsername_wtUserNameInput2"))
-            matricula_input.send_keys("14898500")
+            matricula_input.send_keys('14898500')
 
             senha_input = self.acessar_com_reattempt((By.ID, "SilkUIFramework_wt13_block_wtPassword_wtPasswordInput"))
-            senha_input.send_keys("Clmf2024")
+            senha_input.send_keys('Clmf2024')
 
             self.safe_click((By.ID, "SilkUIFramework_wt13_block_wtAction_wtLoginButton"))
 
@@ -115,13 +165,11 @@ class VerificationIPASGO(BaseAutomation):
             self.acessar_com_reattempt((By.ID, "menuPrincipal"))
 
             time.sleep(4)
-#########################################################
-#chamando a função executar_fluxo: 
-#########################################################
             self.executar_fluxo()
         except Exception as e:
-            pass 
-
+            error_message = getattr(e, 'msg', str(e))
+            logging.error(f"Erro ao acessar o portal IPASGO: {error_message}")
+            # Não atualizar a coluna 'ERRO' no Excel
 
     def executar_fluxo(self):
         """Executa o fluxo de interações após o login no portal IPASGO."""
@@ -129,10 +177,13 @@ class VerificationIPASGO(BaseAutomation):
             self.localizar_procedimentos()
             self.Guia_operadora()
             self.abrir_confirmar_procedimentos()
-            # Se desejar, pode adicionar mais funções aqui
+            # Após executar 'confirmar_procedimentos', parar o script
+            logging.info("Fluxo concluído. Aguardando para análise.")
+            input("Pressione Enter para encerrar o script.")
         except Exception as e:
-            raise
-
+            error_message = getattr(e, 'msg', str(e))
+            logging.error(f"Erro ao executar o fluxo: {error_message}")
+            # Não atualizar a coluna 'ERRO' no Excel
 
     def scroll_and_click(self, element):
         """Rola a página para o elemento e clica nele."""
@@ -152,7 +203,9 @@ class VerificationIPASGO(BaseAutomation):
             self.close_alert_if_present()
 
         except Exception as e:
-            pass #logging.error(f"Erro ao acessar o menu de procedimentos: {e}")
+            error_message = getattr(e, 'msg', str(e))
+            logging.error(f"Erro ao acessar o menu de procedimentos: {error_message}")
+            # Não atualizar a coluna 'ERRO' no Excel
 
     def close_alert_if_present(self):
         """Fecha o alerta se estiver presente."""
@@ -167,12 +220,12 @@ class VerificationIPASGO(BaseAutomation):
     def Guia_operadora(self):
         """Função para inserir o número da guia para localizar procedimento usando dados da planilha."""
         try:
-            numero_guia = self.get_excel_value('Guia_Cod')
+            numero_guia = self.get_excel_value('GUIA_COD')
             logging.info("Localizando o campo de número da guia.")
 
             guia_input = self.acessar_com_reattempt((By.CSS_SELECTOR, 'div.input-group > input.form-control.small'))
             guia_input.send_keys(str(numero_guia))
-            logging.info(f"Número da guia preenchido com sucesso:{numero_guia}")
+            logging.info(f"Número da guia preenchido com sucesso: {numero_guia}")
 
             search_button = self.acessar_com_reattempt((By.XPATH, "//div[contains(@class, 'input-group')]//span[contains(@class, 'fa-search') and contains(@class, 'pointer')]"))
             search_button.click()
@@ -183,7 +236,9 @@ class VerificationIPASGO(BaseAutomation):
             time.sleep(2)
 
         except Exception as e:
-            pass #logging.error(f"Erro ao tentar preencher o número da guia: {e}")
+            error_message = getattr(e, 'msg', str(e))
+            logging.error(f"Erro ao preencher o número da guia: {error_message}")
+            # Não atualizar a coluna 'ERRO' no Excel
 
     def abrir_confirmar_procedimentos(self):
         """Função para confirmar procedimentos executados."""
@@ -195,10 +250,11 @@ class VerificationIPASGO(BaseAutomation):
             time.sleep(2)
             self.confirmar_procedimentos()
         except Exception as e:
-            logging.error(f"Erro ao tentar confirmar os procedimentos: {e}")
+            error_message = getattr(e, 'msg', str(e))
+            logging.error(f"Erro ao tentar confirmar os procedimentos: {error_message}")
+            # Não atualizar a coluna 'ERRO' no Excel
 
     def confirmar_procedimentos(self):
-        
         """Captura os textos de confirmação dos procedimentos exibidos no modal."""
         try:
             logging.info("Iniciando captura de confirmações dos procedimentos.")
@@ -212,21 +268,66 @@ class VerificationIPASGO(BaseAutomation):
             confirmacao_itens = modal.find_elements(By.XPATH, '//*[@id="confirmar-procedimentos-modal"]/div/div/div[2]/div[2]/div/div[2]/div/div')
 
             confirmacoes = []
-            
+
             for item in confirmacao_itens:
                 # Captura o texto do elemento de confirmação
                 texto_confirmacao = item.find_element(By.XPATH, './/span[starts-with(@data-bind, "text: IsConfirmado()")]').text
                 confirmacoes.append(texto_confirmacao)
                 logging.info(f"Confirmação capturada: {texto_confirmacao}")
 
-            # Retorna todas as confirmações capturadas
-            return confirmacoes
+            # Atualiza a coluna 'CONFIRMACOES' no Excel
+            confirmacoes_texto = "; ".join(confirmacoes)
+            self.data_handler.update_value(self.row_index, 'CONFIRMACOES', confirmacoes_texto)
+            self.data_handler.save()
+
+            # Escreve as confirmações no arquivo .txt
+            with open(self.txt_file_path, 'a', encoding='utf-8') as f:
+                for confirmacao in confirmacoes:
+                    f.write(f"Linha {self.row_index + 2}: {confirmacao}\n")
+
+            logging.info(f"Confirmações capturadas e salvas em '{self.txt_file_path}'. Aguardando para análise.")
+            input("Pressione Enter para continuar ou Ctrl+C para encerrar.")
 
         except Exception as e:
             logging.error(f"Erro ao capturar confirmações: {e}")
-
+            # Atualiza a coluna 'ERRO' no Excel
+            self.data_handler.update_value(self.row_index, 'ERRO', str(e))
+            self.data_handler.save()
 
 # Exemplo de execução
 if __name__ == "__main__":
-    automacao = VerificationIPASGO()
-    automacao.acessar_portal_ipasgo()
+    # Defina o caminho do arquivo e o nome da planilha
+    file_path = r"C:\Users\SUPERVISÃO ADM\Desktop\RPA_verificação_ipasgo\BASE_GUIAS_IPASGO_10-2024tTEST.xlsx"
+    sheet_name = 'BaseSADT'
+
+    # Crie uma instância de DataHandler
+    data_handler = DataHandler(file_path, sheet_name)
+
+    # Crie uma instância de VerificationIPASGO, passando o data_handler
+    automacao = VerificationIPASGO(data_handler)
+
+    # Defina o intervalo de linhas que deseja processar
+    start_row = 0
+    end_row = len(data_handler.df) - 1  # Processa todas as linhas
+
+    # Itere sobre as linhas e processe cada uma
+    for idx in range(start_row, end_row + 1):
+        automacao.row_index = idx
+        logging.info(f"Iniciando o processamento da linha {idx + 2}")
+        try:
+            automacao.acessar_portal_ipasgo()
+            # Salve as alterações após processar cada linha
+            data_handler.save()
+            # Parar o loop após a execução
+            break  # Remove esta linha se quiser continuar para as próximas linhas
+
+        except Exception as e:
+            error_message = getattr(e, 'msg', str(e))
+            logging.error(f"Erro ao processar a linha {idx + 2}: {error_message}")
+            # Atualiza a coluna 'ERRO' no Excel
+            data_handler.update_value(idx, 'ERRO', error_message)
+            data_handler.save()
+            break  # Remove esta linha se quiser continuar para as próximas linhas
+
+    # Não feche o WebDriver para manter a página aberta
+    # automacao.driver.quit()
