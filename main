@@ -106,18 +106,31 @@ class BaseAutomation:
                 time.sleep(1)
         raise Exception(f"Não foi possível acessar o elemento após {attempts} tentativas.")
 
+
+
+
+
 class VerificationIPASGO(BaseAutomation):
     def __init__(self, data_handler):
         super().__init__()
         self.data_handler = data_handler
         self.row_index = 0  # Inicie com o índice desejado
 
+    ###################################################################
         # Caminho para o arquivo txt onde as confirmações serão salvas
-        self.txt_file_path = r"C:\Users\SUPERVISÃO ADM\Desktop\RPA_verificação_ipasgo\salvamento_datas_confirmação.txt"
+    ###################################################################
+        self.txt_file_path = r"C:\Users\joaop\OneDrive\Área de Trabalho\Verificação_prodecimento_ipasgo\automacao_verificacao_de_consulta_ipasgo\salvamento_datas_confirmação.txt"
+
+
+
+
 
     def get_excel_value(self, column_name):
         """Obtém o valor de uma coluna específica na linha atual da planilha."""
         return self.data_handler.get_value(self.row_index, column_name)
+
+
+
 
     def acessar_portal_ipasgo(self):
         """Executa o fluxo principal do IPASGO."""
@@ -171,6 +184,10 @@ class VerificationIPASGO(BaseAutomation):
             logging.error(f"Erro ao acessar o portal IPASGO: {error_message}")
             # Não atualizar a coluna 'ERRO' no Excel
 
+
+
+
+
     def executar_fluxo(self):
         """Executa o fluxo de interações após o login no portal IPASGO."""
         try:
@@ -185,11 +202,23 @@ class VerificationIPASGO(BaseAutomation):
             logging.error(f"Erro ao executar o fluxo: {error_message}")
             # Não atualizar a coluna 'ERRO' no Excel
 
+
+
+
+
+
+
     def scroll_and_click(self, element):
         """Rola a página para o elemento e clica nele."""
         self.driver.execute_script("arguments[0].scrollIntoView(true);", element)
         time.sleep(2)
         element.click()
+
+
+
+
+
+
 
     def localizar_procedimentos(self):
         """Função para localizar e clicar no elemento 'localizar-procedimentos'."""
@@ -207,6 +236,11 @@ class VerificationIPASGO(BaseAutomation):
             logging.error(f"Erro ao acessar o menu de procedimentos: {error_message}")
             # Não atualizar a coluna 'ERRO' no Excel
 
+
+
+
+
+
     def close_alert_if_present(self):
         """Fecha o alerta se estiver presente."""
         try:
@@ -216,6 +250,11 @@ class VerificationIPASGO(BaseAutomation):
             logging.info("Alerta fechado com sucesso.")
         except TimeoutException:
             logging.info("Nenhum alerta encontrado, continuando o processo.")
+
+
+
+
+
 
     def Guia_operadora(self):
         """Função para inserir o número da guia para localizar procedimento usando dados da planilha."""
@@ -240,6 +279,10 @@ class VerificationIPASGO(BaseAutomation):
             logging.error(f"Erro ao preencher o número da guia: {error_message}")
             # Não atualizar a coluna 'ERRO' no Excel
 
+
+
+
+
     def abrir_confirmar_procedimentos(self):
         """Função para confirmar procedimentos executados."""
         try:
@@ -253,6 +296,10 @@ class VerificationIPASGO(BaseAutomation):
             error_message = getattr(e, 'msg', str(e))
             logging.error(f"Erro ao tentar confirmar os procedimentos: {error_message}")
             # Não atualizar a coluna 'ERRO' no Excel
+
+
+
+
 
     def confirmar_procedimentos(self):
         """Captura os textos de confirmação dos procedimentos exibidos no modal."""
@@ -294,10 +341,12 @@ class VerificationIPASGO(BaseAutomation):
             self.data_handler.update_value(self.row_index, 'ERRO', str(e))
             self.data_handler.save()
 
+
+
 # Exemplo de execução
 if __name__ == "__main__":
     # Defina o caminho do arquivo e o nome da planilha
-    file_path = r"C:\Users\SUPERVISÃO ADM\Desktop\RPA_verificação_ipasgo\BASE_GUIAS_IPASGO_10-2024tTEST.xlsx"
+    file_path = r"C:\Users\joaop\OneDrive\Área de Trabalho\Verificação_prodecimento_ipasgo\automacao_verificacao_de_consulta_ipasgo\BASE_GUIAS_IPASGO_10-2024tTEST.xlsx"
     sheet_name = 'BaseSADT'
 
     # Crie uma instância de DataHandler
