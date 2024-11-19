@@ -119,7 +119,7 @@ class VerificationIPASGO(BaseAutomation):
     ###################################################################
         # Caminho para o arquivo txt onde as confirmações serão salvas
     ###################################################################
-        self.txt_file_path = r"C:\Users\joaop\OneDrive\Área de Trabalho\Verificação_prodecimento_ipasgo\automacao_verificacao_de_consulta_ipasgo\salvamento_datas_confirmação.txt"
+        self.txt_file_path = r"C:\Users\SUPERVISÃO ADM\Desktop\RPA_verificação_ipasgo\salvamento_datas_confirmação.txt"
 
 
 
@@ -291,7 +291,7 @@ class VerificationIPASGO(BaseAutomation):
             confirmar_button.click()
             logging.info("Botão de confirmação clicado com sucesso.")
             time.sleep(2)
-            self.confirmar_procedimentos()
+            self.confirmar_data_procedimentos()
         except Exception as e:
             error_message = getattr(e, 'msg', str(e))
             logging.error(f"Erro ao tentar confirmar os procedimentos: {error_message}")
@@ -301,52 +301,139 @@ class VerificationIPASGO(BaseAutomation):
 
 
 
-    def confirmar_procedimentos(self):
-        """Captura os textos de confirmação dos procedimentos exibidos no modal."""
+    def confirmar_data_procedimentos(self):
+        """Captura os textos de confirmação dos procedimentos exibidos no modal e salva em uma lista."""
         try:
             logging.info("Iniciando captura de confirmações dos procedimentos.")
 
             # Aguardando a presença do modal
             modal = WebDriverWait(self.driver, 10).until(
-                EC.visibility_of_element_located((By.XPATH, '//*[@id="confirmar-procedimentos-modal"]'))
+                EC.visibility_of_element_located((By.ID, 'confirmar-procedimentos-modal'))
             )
+            logging.info("Modal de confirmação está visível.")
 
             # Localiza todos os itens de confirmação dentro do modal
             confirmacao_itens = modal.find_elements(By.XPATH, '//*[@id="confirmar-procedimentos-modal"]/div/div/div[2]/div[2]/div/div[2]/div/div')
 
-            confirmacoes = []
+            self.confirmation_status_list = []  # Inicializa a lista para armazenar os status
 
-            for item in confirmacao_itens:
+            for idx, item in enumerate(confirmacao_itens):
                 # Captura o texto do elemento de confirmação
-                texto_confirmacao = item.find_element(By.XPATH, './/span[starts-with(@data-bind, "text: IsConfirmado()")]').text
-                confirmacoes.append(texto_confirmacao)
-                logging.info(f"Confirmação capturada: {texto_confirmacao}")
+                texto_confirmacao = item.find_element(By.XPATH, './/span[starts-with(@data-bind, "text: IsConfirmado()")]').text.strip()
+                self.confirmation_status_list.append(texto_confirmacao)
+                logging.info(f"Confirmação capturada na posição {idx + 1}: {texto_confirmacao}")
 
             # Atualiza a coluna 'CONFIRMACOES' no Excel
-            confirmacoes_texto = "; ".join(confirmacoes)
+            confirmacoes_texto = "; ".join(self.confirmation_status_list)
             self.data_handler.update_value(self.row_index, 'CONFIRMACOES', confirmacoes_texto)
             self.data_handler.save()
 
             # Escreve as confirmações no arquivo .txt
             with open(self.txt_file_path, 'a', encoding='utf-8') as f:
-                for confirmacao in confirmacoes:
-                    f.write(f"Linha {self.row_index + 2}: {confirmacao}\n")
+                f.write(f"Linha {self.row_index + 2}: {confirmacoes_texto}\n")
 
-            logging.info(f"Confirmações capturadas e salvas em '{self.txt_file_path}'. Aguardando para análise.")
-            input("Pressione Enter para continuar ou Ctrl+C para encerrar.")
+            logging.info(f"Confirmações capturadas e salvas em '{self.txt_file_path}'.")
+
+            # Chama a função para processar os procedimentos não confirmados
+            self.Clicar_confirmar_procedimento()
 
         except Exception as e:
             logging.error(f"Erro ao capturar confirmações: {e}")
-            # Atualiza a coluna 'ERRO' no Excel
-            self.data_handler.update_value(self.row_index, 'ERRO', str(e))
+    
+
+
+
+
+
+    def Clicar_confirmar_procedimento(self):
+        """
+        Verifica os elementos na lista de confirmações capturada na função anterior.
+        Processa as primeiras 'QTDEATENDIMENTOS' linhas com 'Não confirmado', uma de cada vez.
+        """
+        try:
+            logging.info("Iniciando processamento dos procedimentos não confirmados.")
+
+            # Verificar se a lista de status foi preenchida
+            if not hasattr(self, 'confirmation_status_list') or not self.confirmation_status_list:
+                logging.error("Lista de status de confirmação está vazia ou não foi definida.")
+                return
+
+            # Obter o número máximo de confirmações a partir da coluna 'QTDEATENDIMENTOS'
+            qtde_atendimentos = int(self.get_excel_value('QTDEATENDIMENTOS'))
+            logging.info(f"Quantidade de atendimentos a confirmar: {qtde_atendimentos}")
+
+            confirmados = 0  # Contador de confirmações realizadas
+
+            # Percorre cada status na lista
+            for idx, status_text in enumerate(self.confirmation_status_list):
+                position = idx + 1  # As posições começam em 1
+
+                logging.info(f"Status do procedimento na posição {position}: '{status_text}'")
+
+                if status_text == "Não confirmado":
+                    # Verificar se já atingimos o número desejado de confirmações
+                    if confirmados >= qtde_atendimentos:
+                        logging.info("Número máximo de confirmações atingido.")
+                        break
+
+                    # Construir o XPath para o item na posição correspondente
+                    item_xpath = f'//*[@id="confirmar-procedimentos-modal"]/div/div/div[2]/div[2]/div/div[2]/div/div[{position}]'
+                    try:
+                        # Localizar o item correspondente
+                        item = self.driver.find_element(By.XPATH, item_xpath)
+                        logging.info(f"Procedimento na posição {position} não está confirmado. Confirmando agora...")
+
+                        # Dentro desse item, localizar o elemento para clicar
+                        # O XPath fornecido é: //*[@id="span-cartao-magnetico"]/span[1]
+                        # Tentaremos localizar dentro do item
+                        try:
+                            confirm_button = item.find_element(By.XPATH, './/*[@id="span-cartao-magnetico"]/span[1]')
+                        except NoSuchElementException:
+                            # Se não encontrado dentro do item, procurar no contexto global
+                            confirm_button = self.driver.find_element(By.XPATH, '//*[@id="span-cartao-magnetico"]/span[1]')
+
+                        confirm_button.click()
+                        logging.info(f"Botão de confirmar clicado na posição {position}.")
+
+                        # Aqui, você pode adicionar interações adicionais necessárias para confirmar o procedimento
+                        # Por exemplo, preencher formulários, clicar em outros botões, etc.
+
+                        # Aguardar até que o status mude para "Confirmado + {data}"
+                        status_element = item.find_element(By.XPATH, './/span[starts-with(@data-bind, "text: IsConfirmado()")]')
+                        WebDriverWait(self.driver, 10).until(
+                            lambda driver: status_element.text.strip().startswith("Confirmado")
+                        )
+                        updated_status = status_element.text.strip()
+                        logging.info(f"Novo status do procedimento na posição {position}: {updated_status}")
+
+                        # Atualizar o status na lista
+                        self.confirmation_status_list[idx] = updated_status
+
+                        # Incrementar o contador de confirmações
+                        confirmados += 1
+
+                    except Exception as e:
+                        logging.error(f"Erro ao confirmar o procedimento na posição {position}: {e}")
+                        continue  # Continuar com o próximo procedimento em caso de erro
+                else:
+                    logging.info(f"Procedimento na posição {position} já está confirmado.")
+
+            logging.info("Processamento de procedimentos não confirmados concluído.")
+
+            # Atualizar a coluna 'CONFIRMACOES' no Excel após as confirmações
+            confirmacoes_texto = "; ".join(self.confirmation_status_list)
+            self.data_handler.update_value(self.row_index, 'CONFIRMACOES', confirmacoes_texto)
             self.data_handler.save()
+
+        except Exception as e:
+            self.handle_exception(e, "Erro ao processar os procedimentos não confirmados")
 
 
 
 # Exemplo de execução
 if __name__ == "__main__":
     # Defina o caminho do arquivo e o nome da planilha
-    file_path = r"C:\Users\joaop\OneDrive\Área de Trabalho\Verificação_prodecimento_ipasgo\automacao_verificacao_de_consulta_ipasgo\BASE_GUIAS_IPASGO_10-2024tTEST.xlsx"
+    file_path = r"C:\Users\SUPERVISÃO ADM\Desktop\RPA_verificação_ipasgo\BASE_GUIAS_IPASGO_10-2024tTEST.xlsx"
     sheet_name = 'BaseSADT'
 
     # Crie uma instância de DataHandler
@@ -356,7 +443,7 @@ if __name__ == "__main__":
     automacao = VerificationIPASGO(data_handler)
 
     # Defina o intervalo de linhas que deseja processar
-    start_row = 0
+    start_row = 8
     end_row = len(data_handler.df) - 1  # Processa todas as linhas
 
     # Itere sobre as linhas e processe cada uma
