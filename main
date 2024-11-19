@@ -348,21 +348,15 @@ class VerificationIPASGO(BaseAutomation):
     def Clicar_confirmar_procedimento(self):
         """
         Verifica os elementos na lista de confirmações capturada na função anterior.
-        Processa as primeiras 'QTDEATENDIMENTOS' linhas com 'Não confirmado', uma de cada vez.
+        Processa apenas a primeira linha com 'Não confirmado'.
         """
         try:
-            logging.info("Iniciando processamento dos procedimentos não confirmados.")
+            logging.info("Iniciando processamento do primeiro procedimento não confirmado.")
 
             # Verificar se a lista de status foi preenchida
             if not hasattr(self, 'confirmation_status_list') or not self.confirmation_status_list:
                 logging.error("Lista de status de confirmação está vazia ou não foi definida.")
                 return
-
-            # Obter o número máximo de confirmações a partir da coluna 'QTDEATENDIMENTOS'
-            qtde_atendimentos = int(self.get_excel_value('QTDEATENDIMENTOS'))
-            logging.info(f"Quantidade de atendimentos a confirmar: {qtde_atendimentos}")
-
-            confirmados = 0  # Contador de confirmações realizadas
 
             # Percorre cada status na lista
             for idx, status_text in enumerate(self.confirmation_status_list):
@@ -371,11 +365,6 @@ class VerificationIPASGO(BaseAutomation):
                 logging.info(f"Status do procedimento na posição {position}: '{status_text}'")
 
                 if status_text == "Não confirmado":
-                    # Verificar se já atingimos o número desejado de confirmações
-                    if confirmados >= qtde_atendimentos:
-                        logging.info("Número máximo de confirmações atingido.")
-                        break
-
                     # Construir o XPath para o item na posição correspondente
                     item_xpath = f'//*[@id="confirmar-procedimentos-modal"]/div/div/div[2]/div[2]/div/div[2]/div/div[{position}]'
                     try:
@@ -398,7 +387,13 @@ class VerificationIPASGO(BaseAutomation):
                         # Aqui, você pode adicionar interações adicionais necessárias para confirmar o procedimento
                         # Por exemplo, preencher formulários, clicar em outros botões, etc.
 
-                        # Aguardar até que o status mude para "Confirmado + {data}"
+                        # Placeholder para interações adicionais
+                        # -------------------------------------------------
+                        # Sua lógica adicional aqui
+                        # -------------------------------------------------
+
+                        # Opcional: Após as interações adicionais, você pode atualizar o status
+                        # Aguardar até que o status mude para "Confirmado {data}"
                         status_element = item.find_element(By.XPATH, './/span[starts-with(@data-bind, "text: IsConfirmado()")]')
                         WebDriverWait(self.driver, 10).until(
                             lambda driver: status_element.text.strip().startswith("Confirmado")
@@ -409,24 +404,26 @@ class VerificationIPASGO(BaseAutomation):
                         # Atualizar o status na lista
                         self.confirmation_status_list[idx] = updated_status
 
-                        # Incrementar o contador de confirmações
-                        confirmados += 1
-
                     except Exception as e:
                         logging.error(f"Erro ao confirmar o procedimento na posição {position}: {e}")
-                        continue  # Continuar com o próximo procedimento em caso de erro
+                        # Decida se deseja continuar ou não
+                        # Neste caso, como só processamos o primeiro, podemos sair do loop
+                        break
+
+                    # Após processar o primeiro "Não confirmado", interromper o loop
+                    break
                 else:
                     logging.info(f"Procedimento na posição {position} já está confirmado.")
 
-            logging.info("Processamento de procedimentos não confirmados concluído.")
+            logging.info("Processamento do primeiro procedimento não confirmado concluído.")
 
-            # Atualizar a coluna 'CONFIRMACOES' no Excel após as confirmações
+            # Atualizar a coluna 'CONFIRMACOES' no Excel após a confirmação
             confirmacoes_texto = "; ".join(self.confirmation_status_list)
             self.data_handler.update_value(self.row_index, 'CONFIRMACOES', confirmacoes_texto)
             self.data_handler.save()
 
         except Exception as e:
-            self.handle_exception(e, "Erro ao processar os procedimentos não confirmados")
+            self.handle_exception(e, "Erro ao processar o procedimento não confirmado")
 
 
 
