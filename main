@@ -37,6 +37,8 @@ class DataHandler:
             self.df['CONFIRMACOES'] = ''
         if 'ERRO' not in self.df.columns:
             self.df['ERRO'] = ''
+        if 'QT_CONFIRMADA' not in self.df.columns:
+            self.df['QT_CONFIRMADA'] = ''  # Inicializa com valores vazios ou zero
 
     def get_value(self, row_index, column_name):
         """Obtém o valor de uma coluna específica em uma linha específica."""
@@ -346,6 +348,13 @@ class VerificationIPASGO(BaseAutomation):
             # Atualiza a coluna 'CONFIRMACOES' no Excel
             confirmacoes_texto = "; ".join(self.confirmation_status_list)
             self.data_handler.update_value(self.row_index, 'CONFIRMACOES', confirmacoes_texto)
+
+             # Contar o número de procedimentos confirmados
+            qt_confirmada = sum(1 for status in self.confirmation_status_list if status.startswith('Confirmado'))
+            # Atualizar a coluna 'QT_CONFIRMADA' no Excel
+            self.data_handler.update_value(self.row_index, 'QT_CONFIRMADA', qt_confirmada)
+            logging.info(f"Número de procedimentos confirmados: {qt_confirmada}")
+
             self.data_handler.save()
 
             # Escreve as confirmações no arquivo .txt
