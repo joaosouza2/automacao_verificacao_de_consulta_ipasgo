@@ -119,15 +119,24 @@ class VerificationIPASGO(BaseAutomation):
     ###################################################################
         # Caminho para o arquivo txt onde as confirmações serão salvas
     ###################################################################
-        self.txt_file_path = r"C:\Users\SUPERVISÃO ADM\Desktop\RPA_verificação_ipasgo\salvamento_datas_confirmação.txt"
+        self.txt_file_path = r"C:\Users\joaop\OneDrive\Área de Trabalho\Verificação_prodecimento_ipasgo\automacao_verificacao_de_consulta_ipasgo\salvamento_datas_confirmação.txt"
 
 
 
 
 
-    def get_excel_value(self, column_name):
-        """Obtém o valor de uma coluna específica na linha atual da planilha."""
-        return self.data_handler.get_value(self.row_index, column_name)
+    def get_value(self, row_index, column_name):
+        """Obtém o valor de uma coluna específica em uma linha específica."""
+        try:
+            value = self.df.at[row_index, column_name.upper()]
+            # Converte para string, removendo ".0" se for número decimal
+            if isinstance(value, float) and value.is_integer():
+                value = int(value)  # Remove a parte decimal, mantendo como inteiro
+            return str(value).strip() if value else ""
+        except KeyError:
+            logging.error(f"A coluna '{column_name}' não foi encontrada.")
+            return ""
+
 
 
 
@@ -259,7 +268,7 @@ class VerificationIPASGO(BaseAutomation):
     def Guia_operadora(self):
         """Função para inserir o número da guia para localizar procedimento usando dados da planilha."""
         try:
-            numero_guia = self.get_excel_value('GUIA_COD')
+            numero_guia = self.data_handler.get_value(self.row_index, 'GUIA_COD')
             logging.info("Localizando o campo de número da guia.")
 
             guia_input = self.acessar_com_reattempt((By.CSS_SELECTOR, 'div.input-group > input.form-control.small'))
@@ -387,8 +396,41 @@ class VerificationIPASGO(BaseAutomation):
                         # Aqui, você pode adicionar interações adicionais necessárias para confirmar o procedimento
                         # Por exemplo, preencher formulários, clicar em outros botões, etc.
 
-                        # Placeholder para interações adicionais
+                        # Identificação para interações adicionais para a confirmaçao do atendimento. 
                         # -------------------------------------------------
+                        # Após clicar no botão, identificar o campo que se abre
+                        try:
+                            logging.info("Tentando localizar o campo de número da carteira após a confirmação.")
+                            
+                            # Aguarde até que o campo esteja visível
+                            campo_carteira = WebDriverWait(self.driver, 10).until(
+                                EC.visibility_of_element_located((By.XPATH, '//*[@id="numeroDaCarteiraConfirmacao"]'))
+                            )
+                            logging.info("Campo 'numeroDaCarteiraConfirmacao' localizado com sucesso.")
+                            
+                            # Obter o valor da coluna "COLUNA1" do Excel para a linha atual
+                            numero_carteira = self.data_handler.get_value(self.row_index, 'COLUNA1')
+                            if not numero_carteira:
+                                raise Exception("Número da carteira não encontrado no Excel para a linha atual.")
+                            
+                            # Preencher o campo com o valor extraído do Excel
+                            campo_carteira.send_keys(numero_carteira)
+                            logging.info(f"Campo 'numeroDaCarteiraConfirmacao' preenchido com o valor: {numero_carteira}")
+                            
+                            # Aqui, você pode adicionar interações adicionais necessárias, como clicar em "Confirmar"
+                            # Por exemplo, localizar e clicar no botão "Confirmar"
+                            botao_confirmar = WebDriverWait(self.driver, 10).until(
+                                EC.element_to_be_clickable((By.XPATH, '//button[contains(@class, "confirmar-procedimento-btn")]'))
+                            )
+                            botao_confirmar.click()
+                            logging.info("Botão de confirmação clicado com sucesso após preencher o número da carteira.")
+                            
+                        except Exception as e:
+                            logging.error(f"Erro ao interagir com o campo 'numeroDaCarteiraConfirmacao': {e}")
+                            # Atualizar a coluna 'ERRO' no Excel com a mensagem de erro
+                            self.data_handler.update_value(self.row_index, 'ERRO', f"Erro no campo 'numeroDaCarteiraConfirmacao': {e}")
+                            self.data_handler.save()
+
                         # Sua lógica adicional aqui
                         # -------------------------------------------------
 
@@ -430,7 +472,7 @@ class VerificationIPASGO(BaseAutomation):
 # Exemplo de execução
 if __name__ == "__main__":
     # Defina o caminho do arquivo e o nome da planilha
-    file_path = r"C:\Users\SUPERVISÃO ADM\Desktop\RPA_verificação_ipasgo\BASE_GUIAS_IPASGO_10-2024tTEST.xlsx"
+    file_path = r"C:\Users\joaop\OneDrive\Área de Trabalho\Verificação_prodecimento_ipasgo\automacao_verificacao_de_consulta_ipasgo\BASE_GUIAS_IPASGO_10-2024tTEST.xlsx"
     sheet_name = 'BaseSADT'
 
     # Crie uma instância de DataHandler
