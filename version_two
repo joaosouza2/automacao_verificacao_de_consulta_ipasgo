@@ -13,9 +13,15 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.common.keys import Keys
 
-
-# Configuração de logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Configuração de logging aprimorada
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(name)s - %(message)s',
+    handlers=[
+        logging.FileHandler("automacao.log"),
+        logging.StreamHandler()
+    ]
+)
 
 # Definir um excepthook para capturar exceções não tratadas
 def excepthook(exc_type, exc_value, exc_traceback):
@@ -27,8 +33,13 @@ def excepthook(exc_type, exc_value, exc_traceback):
 
 sys.excepthook = excepthook
 
+class NumeroCarteiraNaoEncontradoException(Exception):
+    """Exceção para indicar que o número da carteira não foi encontrado no Excel."""
+    pass
+
 class DataHandler:
     def __init__(self, file_path, sheet_name):
+        """Inicializa o manipulador de dados com o caminho do arquivo e o nome da planilha."""
         self.file_path = file_path
         self.sheet_name = sheet_name
         self.df = pd.read_excel(file_path, sheet_name=sheet_name)
@@ -62,7 +73,6 @@ class DataHandler:
     def save(self):
         """Salva o DataFrame de volta ao arquivo Excel."""
         try:
-            # Salva no mesmo arquivo para evitar problemas
             self.df.to_excel(self.file_path, sheet_name=self.sheet_name, index=False)
             logging.info(f"Alterações salvas no arquivo Excel com sucesso: {self.file_path}")
         except Exception as e:
@@ -112,9 +122,13 @@ class BaseAutomation:
                 time.sleep(1)
         raise Exception(f"Não foi possível acessar o elemento após {attempts} tentativas.")
 
+    def __enter__(self):
+        """Método chamado ao entrar no contexto 'with'."""
+        return self
 
-
-
+    def __exit__(self, exc_type, exc_value, traceback):
+        """Método chamado ao sair do contexto 'with'."""
+        self.driver.quit()
 
 class VerificationIPASGO(BaseAutomation):
     def __init__(self, data_handler):
@@ -122,35 +136,14 @@ class VerificationIPASGO(BaseAutomation):
         self.data_handler = data_handler
         self.row_index = 0  # Inicie com o índice desejado
 
-    ###################################################################
-        # Caminho para o arquivo txt onde as confirmações serão salvas
-    ###################################################################
+        # Caminho para o arquivo  onde as confirmações serão salvas
         self.txt_file_path = r"C:\Users\SUPERVISÃO ADM\Desktop\RPA_verificação_ipasgo\salvamento_datas_confirmação.txt"
 
-    # Obter as credenciais das variáveis de ambiente
+        # Obter as credenciais das variáveis de ambiente
         self.username = os.environ.get('IPASGO_USERNAME')
         self.password = os.environ.get('IPASGO_PASSWORD')
         if not self.username or not self.password:
             raise Exception("As credenciais não foram encontradas nas variáveis de ambiente.")
-
-
-
-
-    def get_value(self, row_index, column_name):
-        """Obtém o valor de uma coluna específica em uma linha específica."""
-        try:
-            value = self.df.at[row_index, column_name.upper()]
-            # Converte para string, removendo ".0" se for número decimal
-            if isinstance(value, float) and value.is_integer():
-                value = int(value)  # Remove a parte decimal, mantendo como inteiro
-            return str(value).strip() if value else ""
-        except KeyError:
-            logging.error(f"A coluna '{column_name}' não foi encontrada.")
-            return ""
-
-
-
-
 
     def acessar_portal_ipasgo(self):
         """Executa o fluxo principal do IPASGO."""
@@ -168,7 +161,6 @@ class VerificationIPASGO(BaseAutomation):
 
             # Verificar se o alerta está dentro de um iframe (opcional)
             try:
-                # Localiza todos os iframes na página
                 iframes = self.driver.find_elements(By.TAG_NAME, "iframe")
                 for iframe in iframes:
                     self.driver.switch_to.frame(iframe)
@@ -180,11 +172,11 @@ class VerificationIPASGO(BaseAutomation):
                         logging.info("Alerta detectado e fechado dentro de um iframe.")
                         self.driver.switch_to.default_content()
                         self.wait_for_stability(timeout=5)
-                        break  # Sai do loop após fechar o alerta
+                        break
                     except TimeoutException:
                         self.driver.switch_to.default_content()
                         continue
-            except Exception as e:
+            except Exception:
                 pass
 
             self.wait_for_stability(timeout=10)
@@ -202,11 +194,6 @@ class VerificationIPASGO(BaseAutomation):
         except Exception as e:
             error_message = getattr(e, 'msg', str(e))
             logging.error(f"Erro ao acessar o portal IPASGO: {error_message}")
-            # Não atualizar a coluna 'ERRO' no Excel
-
-
-
-
 
     def executar_fluxo(self):
         """Executa o fluxo de interações após o login no portal IPASGO."""
@@ -214,31 +201,17 @@ class VerificationIPASGO(BaseAutomation):
             self.localizar_procedimentos()
             self.Guia_operadora()
             self.abrir_confirmar_procedimentos()
-            # Após executar 'confirmar_procedimentos', parar o script
             logging.info("Fluxo concluído. Aguardando para análise.")
             input("Pressione Enter para encerrar o script.")
         except Exception as e:
             error_message = getattr(e, 'msg', str(e))
             logging.error(f"Erro ao executar o fluxo: {error_message}")
-            # Não atualizar a coluna 'ERRO' no Excel
-
-
-
-
-
-
 
     def scroll_and_click(self, element):
         """Rola a página para o elemento e clica nele."""
         self.driver.execute_script("arguments[0].scrollIntoView(true);", element)
         time.sleep(2)
         element.click()
-
-
-
-
-
-
 
     def localizar_procedimentos(self):
         """Função para localizar e clicar no elemento 'localizar-procedimentos'."""
@@ -247,19 +220,10 @@ class VerificationIPASGO(BaseAutomation):
             procedimentos_button = self.acessar_com_reattempt((By.CSS_SELECTOR, ".localizar-procedimentos-icon"))
             self.scroll_and_click(procedimentos_button)
             time.sleep(5)
-
-            # Verifica se o alerta aparece e lida com ele se necessário
             self.close_alert_if_present()
-
         except Exception as e:
             error_message = getattr(e, 'msg', str(e))
             logging.error(f"Erro ao acessar o menu de procedimentos: {error_message}")
-            # Não atualizar a coluna 'ERRO' no Excel
-
-
-
-
-
 
     def close_alert_if_present(self):
         """Fecha o alerta se estiver presente."""
@@ -270,11 +234,6 @@ class VerificationIPASGO(BaseAutomation):
             logging.info("Alerta fechado com sucesso.")
         except TimeoutException:
             logging.info("Nenhum alerta encontrado, continuando o processo.")
-
-
-
-
-
 
     def Guia_operadora(self):
         """Função para inserir o número da guia para localizar procedimento usando dados da planilha."""
@@ -297,11 +256,6 @@ class VerificationIPASGO(BaseAutomation):
         except Exception as e:
             error_message = getattr(e, 'msg', str(e))
             logging.error(f"Erro ao preencher o número da guia: {error_message}")
-            # Não atualizar a coluna 'ERRO' no Excel
-
-
-
-
 
     def abrir_confirmar_procedimentos(self):
         """Função para confirmar procedimentos executados."""
@@ -315,179 +269,128 @@ class VerificationIPASGO(BaseAutomation):
         except Exception as e:
             error_message = getattr(e, 'msg', str(e))
             logging.error(f"Erro ao tentar confirmar os procedimentos: {error_message}")
-            # Não atualizar a coluna 'ERRO' no Excel
-
-
-
-
 
     def confirmar_data_procedimentos(self):
         """Captura os textos de confirmação dos procedimentos exibidos no modal e salva em uma lista."""
         try:
             logging.info("Iniciando captura de confirmações dos procedimentos.")
 
-            # Aguardando a presença do modal
             modal = WebDriverWait(self.driver, 10).until(
                 EC.visibility_of_element_located((By.ID, 'confirmar-procedimentos-modal'))
             )
             logging.info("Modal de confirmação está visível.")
 
-            # Localiza todos os itens de confirmação dentro do modal
             confirmacao_itens = modal.find_elements(By.XPATH, '//*[@id="confirmar-procedimentos-modal"]/div/div/div[2]/div[2]/div/div[2]/div/div')
 
-            self.confirmation_status_list = []  # Inicializa a lista para armazenar os status
+            self.confirmation_status_list = []
 
             for idx, item in enumerate(confirmacao_itens):
-                # Captura o texto do elemento de confirmação
                 texto_confirmacao = item.find_element(By.XPATH, './/span[starts-with(@data-bind, "text: IsConfirmado()")]').text.strip()
                 self.confirmation_status_list.append(texto_confirmacao)
                 logging.info(f"Confirmação capturada na posição {idx + 1}: {texto_confirmacao}")
 
-            # Atualiza a coluna 'CONFIRMACOES' no Excel
             confirmacoes_texto = "; ".join(self.confirmation_status_list)
             self.data_handler.update_value(self.row_index, 'CONFIRMACOES', confirmacoes_texto)
             self.data_handler.save()
 
-            # Escreve as confirmações no arquivo .txt
             with open(self.txt_file_path, 'a', encoding='utf-8') as f:
                 f.write(f"Linha {self.row_index + 2}: {confirmacoes_texto}\n")
 
             logging.info(f"Confirmações capturadas e salvas em '{self.txt_file_path}'.")
 
-            # Chama a função para processar os procedimentos não confirmados
             self.Clicar_confirmar_procedimento()
 
         except Exception as e:
             logging.error(f"Erro ao capturar confirmações: {e}")
-    
-
-
-
-
 
     def Clicar_confirmar_procedimento(self):
-        """
-        Verifica os elementos na lista de confirmações capturada na função anterior.
-        Processa apenas a primeira linha com 'Não confirmado'.
-        """
+        """Processa o primeiro procedimento não confirmado."""
         try:
-            logging.info("Iniciando processamento do primeiro procedimento não confirmado.")
-
-            # Verificar se a lista de status foi preenchida
-            if not hasattr(self, 'confirmation_status_list') or not self.confirmation_status_list:
-                logging.error("Lista de status de confirmação está vazia ou não foi definida.")
+            idx = self.obter_indice_nao_confirmado()
+            if idx is None:
+                logging.info("Todos os procedimentos já estão confirmados.")
                 return
 
-            # Percorre cada status na lista
-            for idx, status_text in enumerate(self.confirmation_status_list):
-                position = idx + 1  # As posições começam em 1
-
-                logging.info(f"Status do procedimento na posição {position}: '{status_text}'")
-
-                if status_text == "Não confirmado":
-                    # Construir o XPath para o item na posição correspondente
-                    item_xpath = f'//*[@id="confirmar-procedimentos-modal"]/div/div/div[2]/div[2]/div/div[2]/div/div[{position}]'
-                    try:
-                        # Localizar o item correspondente
-                        item = self.driver.find_element(By.XPATH, item_xpath)
-                        logging.info(f"Procedimento na posição {position} não está confirmado. Confirmando agora...")
-
-                        # Dentro desse item, localizar o elemento para clicar
-                        # O XPath fornecido é: //*[@id="span-cartao-magnetico"]/span[1]
-                        # Tentaremos localizar dentro do item
-                        try:
-                            confirm_button = item.find_element(By.XPATH, './/*[@id="span-cartao-magnetico"]/span[1]')
-                        except NoSuchElementException:
-                            # Se não encontrado dentro do item, procurar no contexto global
-                            confirm_button = self.driver.find_element(By.XPATH, '//*[@id="span-cartao-magnetico"]/span[1]')
-
-                        confirm_button.click()
-                        logging.info(f"Botão de confirmar clicado na posição {position}.")
-
-                        # Aqui, você pode adicionar interações adicionais necessárias para confirmar o procedimento
-                        # Por exemplo, preencher formulários, clicar em outros botões, etc.
-
-                        # Identificação para interações adicionais para a confirmaçao do atendimento. 
-                        # -------------------------------------------------
-                        # Após clicar no botão, identificar o campo que se abre
-                        try:
-                            logging.info("Tentando localizar o campo de número da carteira após a confirmação.")
-                            
-                            # Aguarde até que o campo esteja visível
-                            campo_carteira = WebDriverWait(self.driver, 10).until(
-                                EC.visibility_of_element_located((By.XPATH, '//*[@id="numeroDaCarteiraConfirmacao"]'))
-                            )
-                            logging.info("Campo 'numeroDaCarteiraConfirmacao' localizado com sucesso.")
-                            
-                            # Obter o valor da coluna "COLUNA1" do Excel para a linha atual
-                            numero_carteira = self.data_handler.get_value(self.row_index, 'COLUNA1')
-                            if not numero_carteira:
-                                raise Exception("Número da carteira não encontrado no Excel para a linha atual.")
-                            
-                            # Preencher o campo com o valor extraído do Excel
-                            campo_carteira.send_keys(numero_carteira)
-                    
-                            logging.info(f"Campo 'numeroDaCarteiraConfirmacao' preenchido com o valor: {numero_carteira}")
-
-                              # Aguarde 1 segundo
-                            time.sleep(1)
-                            
-                            # Simular a seta para baixo e pressionar Enter
-                            campo_carteira.send_keys(Keys.ARROW_DOWN)
-                            campo_carteira.send_keys(Keys.ENTER)
-                            logging.info("Seta para baixo e Enter pressionados para selecionar a opção correta.")
-                            
-                            # Aqui, você pode adicionar interações adicionais necessárias, como clicar em "Confirmar"
-                            # Por exemplo, localizar e clicar no botão "Confirmar"
-                            botao_confirmar = WebDriverWait(self.driver, 10).until(
-                                EC.element_to_be_clickable((By.XPATH, '//button[contains(@class, "confirmar-procedimento-btn")]'))
-                            )
-                            #botao_confirmar.click()
-                            logging.info("Botão de confirmação clicado com sucesso após preencher o número da carteira.")
-                            
-                        except Exception as e:
-                            logging.error(f"Erro ao interagir com o campo 'numeroDaCarteiraConfirmacao': {e}")
-                            # Atualizar a coluna 'ERRO' no Excel com a mensagem de erro
-                            self.data_handler.update_value(self.row_index, 'ERRO', f"Erro no campo 'numeroDaCarteiraConfirmacao': {e}")
-                            self.data_handler.save()
-
-                        # Sua lógica adicional aqui
-                        # -------------------------------------------------
-
-                        # Opcional: Após as interações adicionais, você pode atualizar o status
-                        # Aguardar até que o status mude para "Confirmado {data}"
-                        status_element = item.find_element(By.XPATH, './/span[starts-with(@data-bind, "text: IsConfirmado()")]')
-                        WebDriverWait(self.driver, 10).until(
-                            lambda driver: status_element.text.strip().startswith("Confirmado")
-                        )
-                        updated_status = status_element.text.strip()
-                        logging.info(f"Novo status do procedimento na posição {position}: {updated_status}")
-
-                        # Atualizar o status na lista
-                        self.confirmation_status_list[idx] = updated_status
-
-                    except Exception as e:
-                        logging.error(f"Erro ao confirmar o procedimento na posição {position}: {e}")
-                        # Decida se deseja continuar ou não
-                        # Neste caso, como só processamos o primeiro, podemos sair do loop
-                        break
-
-                    # Após processar o primeiro "Não confirmado", interromper o loop
-                    break
-                else:
-                    logging.info(f"Procedimento na posição {position} já está confirmado.")
-
-            logging.info("Processamento do primeiro procedimento não confirmado concluído.")
-
-            # Atualizar a coluna 'CONFIRMACOES' no Excel após a confirmação
-            confirmacoes_texto = "; ".join(self.confirmation_status_list)
-            self.data_handler.update_value(self.row_index, 'CONFIRMACOES', confirmacoes_texto)
+            self.confirmar_procedimento(idx)
+            self.atualizar_confirmacoes()
+        except NumeroCarteiraNaoEncontradoException as e:
+            logging.error(e)
+            self.data_handler.update_value(self.row_index, 'ERRO', str(e))
+            self.data_handler.save()
+        except Exception as e:
+            logging.error(f"Erro ao processar o procedimento: {e}")
+            self.data_handler.update_value(self.row_index, 'ERRO', str(e))
             self.data_handler.save()
 
-        except Exception as e:
-            self.handle_exception(e, "Erro ao processar o procedimento não confirmado")
+    def obter_indice_nao_confirmado(self):
+        """Retorna o índice do primeiro procedimento 'Não confirmado'."""
+        for idx, status in enumerate(self.confirmation_status_list):
+            if status == "Não confirmado":
+                return idx
+        return None
 
+    def confirmar_procedimento(self, idx):
+        """Confirma o procedimento no índice especificado."""
+        position = idx + 1
+        logging.info(f"Confirmando procedimento na posição {position}.")
+        item_xpath = f'//*[@id="confirmar-procedimentos-modal"]/div/div/div[2]/div[2]/div/div[2]/div/div[{position}]'
 
+        item = self.driver.find_element(By.XPATH, item_xpath)
+        confirm_button = item.find_element(By.XPATH, './/*[@id="span-cartao-magnetico"]/span[1]')
+        confirm_button.click()
+        time.sleep(1)
+        
+
+        self.preencher_numero_carteira()
+        #self.clicar_botao_confirmar()
+        self.aguardar_confirmacao(item, idx)
+
+    def preencher_numero_carteira(self):
+        """Preenche o campo 'numeroDaCarteiraConfirmacao' com o número da carteira."""
+        campo_carteira = WebDriverWait(self.driver, 10).until(
+            EC.visibility_of_element_located((By.ID, 'numeroDaCarteiraConfirmacao'))
+        )
+        numero_carteira = self.data_handler.get_value(self.row_index, 'COLUNA1')
+        campo_carteira.send_keys(Keys.ARROW_DOWN)
+        logging.info("Seta para baixo enviada.")
+        time.sleep(0.5)  # Aguarda 0,5 segundos
+        campo_carteira.send_keys(Keys.ENTER)
+        logging.info("Tecla ENTER enviada.")
+        if not numero_carteira:
+            raise NumeroCarteiraNaoEncontradoException("Número da carteira não encontrado no Excel.")
+
+        numero_carteira = numero_carteira.split('.')[0] if '.' in numero_carteira else numero_carteira
+
+        campo_carteira.send_keys(numero_carteira)
+        logging.info(f"Número da carteira '{numero_carteira}' preenchido.")
+
+    def clicar_botao_confirmar(self):
+        """Clica no botão de confirmar após preencher o número da carteira."""
+        botao_confirmar = WebDriverWait(self.driver, 10).until(
+            EC.element_to_be_clickable((By.XPATH, '//button[contains(@class, "confirmar-procedimento-btn")]'))
+        )
+        botao_confirmar.click()
+        logging.info("Botão de confirmação clicado com sucesso.")
+
+    def aguardar_confirmacao(self, item, idx):
+        """Aguarda a atualização do status para 'Confirmado'."""
+        status_element = item.find_element(By.XPATH, './/span[starts-with(@data-bind, "text: IsConfirmado()")]')
+        WebDriverWait(self.driver, 10).until(
+            lambda driver: "Confirmado" in status_element.text
+        )
+        updated_status = status_element.text.strip()
+        logging.info(f"Procedimento confirmado: {updated_status}")
+        self.confirmation_status_list[idx] = updated_status
+
+    def atualizar_confirmacoes(self):
+        """Atualiza as confirmações no Excel e no arquivo de texto."""
+        confirmacoes_texto = "; ".join(self.confirmation_status_list)
+        self.data_handler.update_value(self.row_index, 'CONFIRMACOES', confirmacoes_texto)
+        self.data_handler.save()
+
+        with open(self.txt_file_path, 'a', encoding='utf-8') as f:
+            f.write(f"Linha {self.row_index + 2}: {confirmacoes_texto}\n")
+        logging.info(f"Confirmações atualizadas e salvas.")
 
 # Exemplo de execução
 if __name__ == "__main__":
@@ -498,31 +401,27 @@ if __name__ == "__main__":
     # Crie uma instância de DataHandler
     data_handler = DataHandler(file_path, sheet_name)
 
-    # Crie uma instância de VerificationIPASGO, passando o data_handler
-    automacao = VerificationIPASGO(data_handler)
+    # Use 'with' para gerenciar o contexto do WebDriver
+    with VerificationIPASGO(data_handler) as automacao:
+        # Defina o intervalo de linhas que deseja processar
+        start_row = 8
+        end_row = len(data_handler.df) - 1  # Processa todas as linhas
 
-    # Defina o intervalo de linhas que deseja processar
-    start_row = 8
-    end_row = len(data_handler.df) - 1  # Processa todas as linhas
+        # Itere sobre as linhas e processe cada uma
+        for idx in range(start_row, end_row + 1):
+            automacao.row_index = idx
+            logging.info(f"Iniciando o processamento da linha {idx + 2}")
+            try:
+                automacao.acessar_portal_ipasgo()
+                # Salve as alterações após processar cada linha
+                data_handler.save()
+                # Parar o loop após a execução
+                break  # Remova esta linha se quiser continuar para as próximas linhas
 
-    # Itere sobre as linhas e processe cada uma
-    for idx in range(start_row, end_row + 1):
-        automacao.row_index = idx
-        logging.info(f"Iniciando o processamento da linha {idx + 2}")
-        try:
-            automacao.acessar_portal_ipasgo()
-            # Salve as alterações após processar cada linha
-            data_handler.save()
-            # Parar o loop após a execução
-            break  # Remove esta linha se quiser continuar para as próximas linhas
-
-        except Exception as e:
-            error_message = getattr(e, 'msg', str(e))
-            logging.error(f"Erro ao processar a linha {idx + 2}: {error_message}")
-            # Atualiza a coluna 'ERRO' no Excel
-            data_handler.update_value(idx, 'ERRO', error_message)
-            data_handler.save()
-            break  # Remove esta linha se quiser continuar para as próximas linhas
-
-    # Não feche o WebDriver para manter a página aberta
-    # automacao.driver.quit()
+            except Exception as e:
+                error_message = getattr(e, 'msg', str(e))
+                logging.error(f"Erro ao processar a linha {idx + 2}: {error_message}")
+                # Atualiza a coluna 'ERRO' no Excel
+                data_handler.update_value(idx, 'ERRO', error_message)
+                data_handler.save()
+                break  # Remova esta linha se quiser continuar para as próximas linhas
