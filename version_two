@@ -351,11 +351,7 @@ class VerificationIPASGO(BaseAutomation):
             EC.visibility_of_element_located((By.ID, 'numeroDaCarteiraConfirmacao'))
         )
         numero_carteira = self.data_handler.get_value(self.row_index, 'COLUNA1')
-        campo_carteira.send_keys(Keys.ARROW_DOWN)
-        logging.info("Seta para baixo enviada.")
-        time.sleep(0.5)  # Aguarda 0,5 segundos
-        campo_carteira.send_keys(Keys.ENTER)
-        logging.info("Tecla ENTER enviada.")
+        
         if not numero_carteira:
             raise NumeroCarteiraNaoEncontradoException("Número da carteira não encontrado no Excel.")
 
@@ -363,6 +359,13 @@ class VerificationIPASGO(BaseAutomation):
 
         campo_carteira.send_keys(numero_carteira)
         logging.info(f"Número da carteira '{numero_carteira}' preenchido.")
+          # Aguarde 1 segundo
+        time.sleep(1)
+                            
+        # Simular a seta para baixo e pressionar Enter
+        campo_carteira.send_keys(Keys.ARROW_DOWN)
+        campo_carteira.send_keys(Keys.ENTER)
+        logging.info("Seta para baixo e Enter pressionados para selecionar a opção correta.")
 
     def clicar_botao_confirmar(self):
         """Clica no botão de confirmar após preencher o número da carteira."""

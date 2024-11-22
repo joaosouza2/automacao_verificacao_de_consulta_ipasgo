@@ -310,3 +310,43 @@ Stacktrace:
 2024-11-22 15:10:05,685 - INFO - root - Alterações salvas no arquivo Excel com sucesso: C:\Users\SUPERVISÃO ADM\Desktop\RPA_verificação_ipasgo\BASE_GUIAS_IPASGO_10-2024tTEST.xlsx
 2024-11-22 15:10:05,685 - INFO - root - Fluxo concluído. Aguardando para análise.
 2024-11-22 15:11:46,677 - WARNING - urllib3.connectionpool - Retrying (Retry(total=2, connect=None, read=None, redirect=None, status=None)) after connection broken by 'ConnectionResetError(10054, 'Foi forçado o cancelamento de uma conexão existente pelo host remoto', None, 10054, None)': /session/6f1db84e7cf2777429ac52c2a570b574
+2024-11-22 16:25:25,290 - INFO - root - Iniciando o processamento da linha 10
+2024-11-22 16:25:27,767 - INFO - root - Elemento encontrado: ('id', 'SilkUIFramework_wt13_block_wtUsername_wtUserNameInput2')
+2024-11-22 16:25:27,837 - INFO - root - Elemento encontrado: ('id', 'SilkUIFramework_wt13_block_wtPassword_wtPasswordInput')
+2024-11-22 16:25:29,412 - INFO - root - Elemento clicado com sucesso: ('id', 'SilkUIFramework_wt13_block_wtAction_wtLoginButton')
+2024-11-22 16:25:29,959 - INFO - root - Alerta detectado e fechado dentro de um iframe.
+2024-11-22 16:25:31,992 - INFO - root - Elemento encontrado: ('xpath', "//*[@id='IpasgoTheme_wt16_block_wtMainContent_wtSistemas_ctl08_SilkUIFramework_wt36_block_wtActions_wtModulos_SilkUIFramework_wt9_block_wtContent_wtModuloPortalTable_ctl04_wt2']/span")
+2024-11-22 16:25:38,874 - INFO - root - Elemento encontrado: ('id', 'menuPrincipal')
+2024-11-22 16:25:42,876 - INFO - root - Localizando o menu de procedimentos.
+2024-11-22 16:25:42,896 - INFO - root - Elemento encontrado: ('css selector', '.localizar-procedimentos-icon')
+2024-11-22 16:25:50,980 - INFO - root - Verificando se o alerta está presente.
+2024-11-22 16:25:56,070 - INFO - root - Nenhum alerta encontrado, continuando o processo.
+2024-11-22 16:25:56,070 - INFO - root - Localizando o campo de número da guia.
+2024-11-22 16:25:56,088 - INFO - root - Elemento encontrado: ('css selector', 'div.input-group > input.form-control.small')
+2024-11-22 16:25:56,152 - INFO - root - Número da guia preenchido com sucesso: 7796079
+2024-11-22 16:25:56,183 - INFO - root - Elemento encontrado: ('xpath', "//div[contains(@class, 'input-group')]//span[contains(@class, 'fa-search') and contains(@class, 'pointer')]")
+2024-11-22 16:26:00,255 - INFO - root - Iniciando o processo de confirmação dos procedimentos.
+2024-11-22 16:26:00,280 - INFO - root - Elemento encontrado: ('xpath', '//*[@id="localizarprocedimentos"]/div[2]/div/div[2]/div/div[2]/div[1]/div/div/div/div[2]/div[2]/div/div[1]/div/div[1]/div[2]/div/i[2]')
+2024-11-22 16:26:00,352 - INFO - root - Botão de confirmação clicado com sucesso.
+2024-11-22 16:26:02,363 - INFO - root - Iniciando captura de confirmações dos procedimentos.
+2024-11-22 16:26:02,382 - INFO - root - Modal de confirmação está visível.
+2024-11-22 16:26:02,417 - INFO - root - Confirmação capturada na posição 1: Confirmado 17/10/2024
+2024-11-22 16:26:02,433 - INFO - root - Confirmação capturada na posição 2: Confirmado 17/10/2024
+2024-11-22 16:26:02,444 - INFO - root - Confirmação capturada na posição 3: Confirmado 31/10/2024
+2024-11-22 16:26:02,457 - INFO - root - Confirmação capturada na posição 4: Confirmado 31/10/2024
+2024-11-22 16:26:02,469 - INFO - root - Confirmação capturada na posição 5: Confirmado 21/11/2024
+2024-11-22 16:26:02,480 - INFO - root - Confirmação capturada na posição 6: Confirmado 21/11/2024
+2024-11-22 16:26:02,493 - INFO - root - Confirmação capturada na posição 7: Não confirmado
+2024-11-22 16:26:02,506 - INFO - root - Confirmação capturada na posição 8: Não confirmado
+2024-11-22 16:26:02,506 - INFO - root - Valor atualizado na linha 10, coluna 'CONFIRMACOES': Confirmado 17/10/2024; Confirmado 17/10/2024; Confirmado 31/10/2024; Confirmado 31/10/2024; Confirmado 21/11/2024; Confirmado 21/11/2024; Não confirmado; Não confirmado
+2024-11-22 16:26:02,579 - INFO - root - Alterações salvas no arquivo Excel com sucesso: C:\Users\SUPERVISÃO ADM\Desktop\RPA_verificação_ipasgo\BASE_GUIAS_IPASGO_10-2024tTEST.xlsx
+2024-11-22 16:26:02,579 - INFO - root - Confirmações capturadas e salvas em 'C:\Users\SUPERVISÃO ADM\Desktop\RPA_verificação_ipasgo\salvamento_datas_confirmação.txt'.
+2024-11-22 16:26:02,579 - INFO - root - Confirmando procedimento na posição 7.
+2024-11-22 16:26:03,738 - INFO - root - Número da carteira '667434549' preenchido.
+2024-11-22 16:26:04,783 - INFO - root - Seta para baixo e Enter pressionados para selecionar a opção correta.
+2024-11-22 16:26:14,970 - ERROR - root - Erro ao processar o procedimento: Message: 
+
+2024-11-22 16:26:14,970 - INFO - root - Valor atualizado na linha 10, coluna 'ERRO': Message: 
+
+2024-11-22 16:26:15,042 - INFO - root - Alterações salvas no arquivo Excel com sucesso: C:\Users\SUPERVISÃO ADM\Desktop\RPA_verificação_ipasgo\BASE_GUIAS_IPASGO_10-2024tTEST.xlsx
+2024-11-22 16:26:15,042 - INFO - root - Fluxo concluído. Aguardando para análise.
