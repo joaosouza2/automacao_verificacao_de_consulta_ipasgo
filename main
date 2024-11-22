@@ -439,8 +439,9 @@ class VerificationIPASGO(BaseAutomation):
                             
                             # Aqui, você pode adicionar interações adicionais necessárias, como clicar em "Confirmar"
                             # Por exemplo, localizar e clicar no botão "Confirmar"
+                            # Localizar e clicar no botão "Confirmar" usando o XPath fornecido
                             botao_confirmar = WebDriverWait(self.driver, 10).until(
-                                EC.element_to_be_clickable((By.XPATH, '//button[contains(@class, "confirmar-procedimento-btn")]'))
+                                EC.element_to_be_clickable((By.XPATH, '//*[@id="indentificar-confirmar-procedimentos-modal"]/div/div/div[3]/div/button[2]'))
                             )
                             #botao_confirmar.click()
                             logging.info("Botão de confirmação clicado com sucesso após preencher o número da carteira.")
