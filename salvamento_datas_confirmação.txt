@@ -93,3 +93,5 @@ Linha 10: Confirmado 17/10/2024; Confirmado 17/10/2024; Confirmado 31/10/2024; C
 Linha 10: Confirmado 17/10/2024; Confirmado 17/10/2024; Confirmado 31/10/2024; Confirmado 31/10/2024; Confirmado 21/11/2024; Confirmado 21/11/2024; Não confirmado; Não confirmado
 Linha 10: Confirmado 17/10/2024; Confirmado 17/10/2024; Confirmado 31/10/2024; Confirmado 31/10/2024; Confirmado 21/11/2024; Confirmado 21/11/2024; Não confirmado; Não confirmado
 Linha 10: Confirmado 17/10/2024; Confirmado 17/10/2024; Confirmado 31/10/2024; Confirmado 31/10/2024; Confirmado 21/11/2024; Confirmado 21/11/2024; Não confirmado; Não confirmado
+Linha 200: Confirmado 18/11/2024; Não confirmado; Não confirmado; Não confirmado; Não confirmado
+Linha 201: Confirmado 25/11/2024; Não confirmado
