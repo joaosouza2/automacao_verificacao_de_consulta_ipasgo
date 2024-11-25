@@ -217,6 +217,8 @@ class VerificationIPASGO(BaseAutomation):
             self.Guia_operadora()
             self.abrir_confirmar_procedimentos()
             self.Clicar_confirmar_procedimento()
+            self.fechar_alerta_notificacao()
+        
             # Após executar 'confirmar_procedimentos', parar o script
             logging.info("Fluxo concluído. Aguardando para análise.")
             input("Pressione Enter para encerrar o script.")
