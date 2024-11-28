@@ -386,7 +386,7 @@ class VerificationIPASGO(BaseAutomation):
                             botao_confirmar = WebDriverWait(self.driver, 10).until(
                                 EC.element_to_be_clickable((By.XPATH, '//*[@id="indentificar-confirmar-procedimentos-modal"]/div/div/div[3]/div/button[2]'))
                             )
-                           #botao_confirmar.click()
+                            #botao_confirmar.click()
                             logging.info("Botão de confirmação clicado com sucesso após preencher o número da carteira.")
 
                         except Exception as e:
@@ -456,7 +456,7 @@ if __name__ == "__main__":
     automacao = VerificationIPASGO(data_handler)
 
     # Defina o intervalo de linhas que deseja processar (números de linhas do Excel, incluindo o cabeçalho)
-    start_line = 10  # Por exemplo, para começar na linha 10 do Excel
+    start_line = 508  # Por exemplo, para começar na linha 10 do Excel
     end_line = len(data_handler.df) + 1  # O número total de linhas no Excel, incluindo o cabeçalho
 
     # Converter números de linha do Excel para índices do pandas
