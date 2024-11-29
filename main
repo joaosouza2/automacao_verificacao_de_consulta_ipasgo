@@ -226,8 +226,7 @@ class VerificationIPASGO(BaseAutomation):
     def close_alert_if_present(self):
         """Fecha o alerta se estiver presente."""
         try:
-            logging.info("Verificando se o alerta está presente.")
-            alerta = WebDriverWait(self.driver, 3).until(EC.visibility_of_element_located((By.XPATH, '//*[@id="button-1"]')))
+            alerta = WebDriverWait(self.driver, 2).until(EC.visibility_of_element_located((By.XPATH, '//*[@id="button-1"]')))
             alerta.click()
             time.sleep(1)
         except TimeoutException:
@@ -237,7 +236,6 @@ class VerificationIPASGO(BaseAutomation):
         """Função para inserir o número da guia para localizar procedimento usando dados da planilha."""
         try:
             numero_guia = self.data_handler.get_value(self.row_index, 'GUIA_COD')
-            logging.info("Localizando o campo de número da guia.")
 
             guia_input = self.acessar_com_reattempt((By.CSS_SELECTOR, 'div.input-group > input.form-control.small'))
             guia_input.send_keys(str(numero_guia))
