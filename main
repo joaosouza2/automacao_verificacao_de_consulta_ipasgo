@@ -13,8 +13,12 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.webdriver.common.keys import Keys
 
+
+
 # Configuração de logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+
 
 # Definir um excepthook para capturar exceções não tratadas
 def excepthook(exc_type, exc_value, exc_traceback):
@@ -422,13 +426,23 @@ class VerificationIPASGO(BaseAutomation):
         """Fecha o alerta de notificação se estiver presente."""
         try:
             logging.info("Verificando se o alerta de notificação está presente.")
-            alerta_close_button = WebDriverWait(self.driver, 5).until(
-                EC.element_to_be_clickable((By.XPATH, "//i[contains(@class, 'fa-times') and contains(@class, 'close')]"))
-            )
+            # Esperar um tempo fixo conhecido antes de tentar encontrar o alerta
+            time.sleep(1.5)  
+            # Tentar localizar o elemento de modo fixo considerando que ele já exista
+            alerta_close_button = self.driver.find_element(By.XPATH, "//i[contains(@class, 'fa-times') and contains(@class, 'close')]")
             alerta_close_button.click()
-            logging.info("Alerta de notificação fechado com sucesso.")
-        except TimeoutException:
-            logging.info("Nenhum alerta de notificação encontrado.")
+            logging.info("Alerta de notificação fechado com sucesso na tentativa inicial.")
+        except NoSuchElementException:
+            logging.info("Alerta de notificação não encontrado na tentativa inicial. Tentando novamente com WebDriverWait.")
+            try:
+                # Se não encontrado, tentar novamente usando WebDriverWait que irá esperar o elemento está presente
+                alerta_close_button = WebDriverWait(self.driver, 5).until(
+                    EC.element_to_be_clickable((By.XPATH, "//i[contains(@class, 'fa-times') and contains(@class, 'close')]"))
+                )
+                alerta_close_button.click()
+                logging.info("Alerta de notificação fechado com sucesso após usar WebDriverWait.")
+            except TimeoutException:
+                logging.info("Nenhum alerta de notificação encontrado após usar WebDriverWait.")
         except Exception as e:
             logging.error(f"Erro ao tentar fechar o alerta de notificação: {e}")
 
