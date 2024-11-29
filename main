@@ -193,13 +193,11 @@ class VerificationIPASGO(BaseAutomation):
             self.Clicar_confirmar_procedimento()
             self.fechar_alerta_notificacao()
 
-            # Após executar 'confirmar_procedimentos', parar o script
-            logging.info("Fluxo concluído. Aguardando para análise.")
             input("Pressione Enter para encerrar o script.")
         except Exception as e:
             error_message = getattr(e, 'msg', str(e))
             logging.error(f"Erro ao executar o fluxo: {error_message}")
-            # Não atualizar a coluna 'ERRO' no Excel
+           
 
     def scroll_and_click(self, element):
         """Rola a página para o elemento e clica nele."""
@@ -215,7 +213,6 @@ class VerificationIPASGO(BaseAutomation):
             self.scroll_and_click(procedimentos_button)
             time.sleep(2)
 
-            # Verifica se o alerta aparece e lida com ele se necessário
             self.close_alert_if_present()
 
         except Exception as e:
@@ -273,13 +270,11 @@ class VerificationIPASGO(BaseAutomation):
         try:
             logging.info("Iniciando captura de confirmações dos procedimentos.")
 
-            # Aguardando a presença do modal
             modal = WebDriverWait(self.driver, 10).until(
                 EC.visibility_of_element_located((By.ID, 'confirmar-procedimentos-modal'))
             )
             logging.info("Modal de confirmação está visível.")
 
-            # Localiza todos os itens de confirmação dentro do modal
             confirmacao_itens = modal.find_elements(By.XPATH, '//*[@id="confirmar-procedimentos-modal"]/div/div/div[2]/div[2]/div/div[2]/div/div')
 
             self.confirmation_status_list = []  # Inicializa a lista para armazenar os status
