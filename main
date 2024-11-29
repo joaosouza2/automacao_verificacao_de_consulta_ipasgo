@@ -229,7 +229,7 @@ class VerificationIPASGO(BaseAutomation):
             logging.info("Verificando se o alerta está presente.")
             alerta = WebDriverWait(self.driver, 3).until(EC.visibility_of_element_located((By.XPATH, '//*[@id="button-1"]')))
             alerta.click()
-            logging.info("Alerta fechado com sucesso.")
+            time.sleep(1)
         except TimeoutException:
             logging.info("Nenhum alerta encontrado, continuando o processo.")
 
