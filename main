@@ -64,7 +64,6 @@ class DataHandler:
     def save(self):
         """Salva o DataFrame de volta ao arquivo Excel."""
         try:
-            # Salva no mesmo arquivo para evitar problemas
             self.df.to_excel(self.file_path, sheet_name=self.sheet_name, index=False)
             logging.info(f"Alterações salvas no arquivo Excel com sucesso: {self.file_path}")
         except Exception as e:
@@ -308,7 +307,6 @@ class VerificationIPASGO(BaseAutomation):
 
             logging.info(f"Confirmações capturadas e salvas em '{self.txt_file_path}'.")
 
-            # Chama a função para processar os procedimentos não confirmados
 
         except Exception as e:
             logging.error(f"Erro ao capturar confirmações: {e}")
@@ -340,9 +338,7 @@ class VerificationIPASGO(BaseAutomation):
                         item = self.driver.find_element(By.XPATH, item_xpath)
                         logging.info(f"Procedimento na posição {position} não está confirmado. Confirmando agora...")
 
-                        # Dentro desse item, localizar o elemento para clicar
-                        # O XPath fornecido é: //*[@id="span-cartao-magnetico"]/span[1]
-                        # Tentaremos localizar dentro do item
+    
                         try:
                             confirm_button = item.find_element(By.XPATH, './/*[@id="span-cartao-magnetico"]/span[1]')
                         except NoSuchElementException:
@@ -352,7 +348,7 @@ class VerificationIPASGO(BaseAutomation):
                         confirm_button.click()
                         logging.info(f"Botão de confirmar clicado na posição {position}.")
 
-                        # Identificação para interações adicionais para a confirmaçao do atendimento.
+                        
                         # -------------------------------------------------
                         # Após clicar no botão, identificar o campo que se abre
                         try:
@@ -374,10 +370,10 @@ class VerificationIPASGO(BaseAutomation):
 
                             logging.info(f"Campo 'numeroDaCarteiraConfirmacao' preenchido com o valor: {numero_carteira}")
 
-                            # Aguarde 1 segundo
+                            
                             time.sleep(1)
 
-                            # Simular a seta para baixo e pressionar Enter
+                            #
                             campo_carteira.send_keys(Keys.ARROW_DOWN)
                             campo_carteira.send_keys(Keys.ENTER)
                             logging.info("Seta para baixo e Enter pressionados para selecionar a opção correta.")
@@ -404,17 +400,11 @@ class VerificationIPASGO(BaseAutomation):
                         updated_status = status_element.text.strip()
                         logging.info(f"Novo status do procedimento na posição {position}: {updated_status}")
 
-                        # Atualizar o status na lista
                         self.confirmation_status_list[idx] = updated_status
 
                     except Exception as e:
-                        logging.error(f"Erro ao confirmar o procedimento na posição {position}: {e}")
-                        # Decida se deseja continuar ou não
-                        # Neste caso, como só processamos o primeiro, podemos sair do loop
+                        logging.error(f"Erro ao confirmar o procedimento na posição {position}: {e}")   
                         break
-
-                    # Após processar o primeiro "Não confirmado", interromper o loop
-                    break
                 else:
                     logging.info(f"Procedimento na posição {position} já está confirmado.")
 
@@ -432,7 +422,6 @@ class VerificationIPASGO(BaseAutomation):
         """Fecha o alerta de notificação se estiver presente."""
         try:
             logging.info("Verificando se o alerta de notificação está presente.")
-            # Tentar localizar o elemento do alerta
             alerta_close_button = WebDriverWait(self.driver, 5).until(
                 EC.element_to_be_clickable((By.XPATH, "//i[contains(@class, 'fa-times') and contains(@class, 'close')]"))
             )
@@ -449,18 +438,18 @@ if __name__ == "__main__":
     file_path = r"C:\Users\SUPERVISÃO ADM\Desktop\RPA_verificação_ipasgo\planilhas\Base_confirmação.xlsx"
     sheet_name = 'Planilha1'
 
-    # Crie uma instância de DataHandler
+    
     data_handler = DataHandler(file_path, sheet_name)
 
-    # Crie uma instância de VerificationIPASGO, passando o data_handler
+    
     automacao = VerificationIPASGO(data_handler)
 
-    # Defina o intervalo de linhas que deseja processar (números de linhas do Excel, incluindo o cabeçalho)
-    start_line = 1  # Por exemplo, para começar na linha 10 do Excel
-    end_line = len(data_handler.df) + 1  # O número total de linhas no Excel, incluindo o cabeçalho
+    # Defina o intervalo de linhas que deseja processar (incluindo o cabeçalho)
+    start_line = 1  # Por exemplo, para começar na linha 132 do Excel
+    end_line = len(data_handler.df) + 1  
 
     # Converter números de linha do Excel para índices do pandas
-    start_idx = start_line - 2  # Subtraia 2 para alinhar com o índice do pandas
+    start_idx = start_line - 2  
     end_idx = end_line - 2
 
     # Itere sobre as linhas e processe cada uma
@@ -470,17 +459,16 @@ if __name__ == "__main__":
         logging.info(f"Iniciando o processamento da linha {excel_line_number}")
         try:
             automacao.acessar_portal_ipasgo()
-            # Salve as alterações após processar cada linha
+    
             data_handler.save()
-            # Parar o loop após a execução (remova esta linha se quiser continuar)
+            
             break
         except Exception as e:
             error_message = getattr(e, 'msg', str(e))
             logging.error(f"Erro ao processar a linha {excel_line_number}: {error_message}")
-            # Atualiza a coluna 'ERRO' no Excel
             data_handler.update_value(idx, 'ERRO', error_message)
             data_handler.save()
-            # Parar o loop após a execução (remova esta linha se quiser continuar)
+            
             break
 
     # Não feche o WebDriver para manter a página aberta
