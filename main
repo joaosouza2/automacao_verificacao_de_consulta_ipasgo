@@ -213,7 +213,7 @@ class VerificationIPASGO(BaseAutomation):
             logging.info("Localizando o menu de procedimentos.")
             procedimentos_button = self.acessar_com_reattempt((By.CSS_SELECTOR, ".localizar-procedimentos-icon"))
             self.scroll_and_click(procedimentos_button)
-            time.sleep(5)
+            time.sleep(2)
 
             # Verifica se o alerta aparece e lida com ele se necessário
             self.close_alert_if_present()
@@ -227,7 +227,7 @@ class VerificationIPASGO(BaseAutomation):
         """Fecha o alerta se estiver presente."""
         try:
             logging.info("Verificando se o alerta está presente.")
-            alerta = WebDriverWait(self.driver, 5).until(EC.visibility_of_element_located((By.XPATH, '//*[@id="button-1"]')))
+            alerta = WebDriverWait(self.driver, 3).until(EC.visibility_of_element_located((By.XPATH, '//*[@id="button-1"]')))
             alerta.click()
             logging.info("Alerta fechado com sucesso.")
         except TimeoutException:
@@ -459,7 +459,7 @@ if __name__ == "__main__":
     automacao = VerificationIPASGO(data_handler)
 
     # Defina o intervalo de linhas que deseja processar (incluindo o cabeçalho)
-    start_line = 1  # Por exemplo, para começar na linha 132 do Excel
+    start_line = 2  # Por exemplo, para começar na linha 132 do Excel
     end_line = len(data_handler.df) + 1  
 
     # Converter números de linha do Excel para índices do pandas
