@@ -3,3 +3,14 @@ Linha 10: Não confirmado; Não confirmado; Não confirmado; Não confirmado
 Linha 508: Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado
 Linha 508: Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado
 Linha 508: Confirmado 28/11/2024; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado
+Linha 508: Confirmado 19/11/2024; Confirmado 01/12/2024; Não confirmado; Não confirmado
+Linha 508: Confirmado 19/11/2024; Confirmado 01/12/2024; Não confirmado; Não confirmado
+Linha 509: Confirmado 19/11/2024; Confirmado 01/12/2024; Confirmado 03/12/2024; Não confirmado
+Linha 510: Confirmado 19/11/2024; Confirmado 01/12/2024; Confirmado 03/12/2024; Não confirmado
+Linha 509: Confirmado 12/11/2024; Confirmado 12/11/2024; Confirmado 19/11/2024; Confirmado 19/11/2024; Confirmado 26/11/2024; Confirmado 26/11/2024; Confirmado 01/12/2024; Não confirmado
+Linha 510: Confirmado 12/11/2024; Confirmado 12/11/2024; Confirmado 19/11/2024; Confirmado 19/11/2024; Confirmado 26/11/2024; Confirmado 26/11/2024; Confirmado 01/12/2024; Confirmado 03/12/2024
+Linha 512: Confirmado 12/11/2024; Confirmado 12/11/2024; Confirmado 19/11/2024; Confirmado 19/11/2024; Confirmado 26/11/2024; Confirmado 26/11/2024; Confirmado 01/12/2024; Confirmado 03/12/2024
+Linha 510: Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado
+Linha 511: Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado
+Linha 512: Confirmado 03/12/2024; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado
+Linha 513: Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado; Não confirmado

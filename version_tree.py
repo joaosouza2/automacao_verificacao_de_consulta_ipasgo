@@ -219,7 +219,7 @@ class VerificationIPASGO(BaseAutomation):
         """Fecha o alerta se estiver presente."""
         try:
             logging.info("Verificando se o alerta está presente.")
-            alerta = WebDriverWait(self.driver, 5).until(EC.visibility_of_element_located((By.XPATH, '//*[@id="button-1"]')))
+            alerta = WebDriverWait(self.driver, 2).until(EC.visibility_of_element_located((By.XPATH, '//*[@id="button-1"]')))
             alerta.click()
             logging.info("Alerta fechado com sucesso.")
         except TimeoutException:
@@ -398,7 +398,7 @@ class VerificationIPASGO(BaseAutomation):
                             botao_confirmar = WebDriverWait(self.driver, 10).until(
                                 EC.element_to_be_clickable((By.XPATH, '//*[@id="indentificar-confirmar-procedimentos-modal"]/div/div/div[3]/div/button[2]'))
                             )
-                            #botao_confirmar.click()
+                            botao_confirmar.click()
                             logging.info("Botão de confirmação clicado com sucesso após preencher o número da carteira.")
 
                         except Exception as e:
@@ -444,32 +444,36 @@ class VerificationIPASGO(BaseAutomation):
         """Fecha o alerta de notificação se estiver presente."""
         try:
             logging.info("Verificando se o alerta de notificação está presente.")
-            # Tentar localizar o elemento do alerta sem esperar
+            # Esperar um tempo fixo conhecido antes de tentar encontrar o alerta
+            time.sleep(1.5)  
+            # Tentar localizar o elemento de modo fixo considerando que ele já exista
             alerta_close_button = self.driver.find_element(By.XPATH, "//i[contains(@class, 'fa-times') and contains(@class, 'close')]")
             alerta_close_button.click()
-            logging.info("Alerta de notificação fechado com sucesso.")
+            logging.info("Alerta de notificação fechado com sucesso na tentativa inicial.")
         except NoSuchElementException:
-            logging.info("Nenhum alerta de notificação encontrado. Tentando com WebDriverWait.")
+            logging.info("Alerta de notificação não encontrado na tentativa inicial. Tentando novamente com WebDriverWait.")
             try:
-                # Tentar localizar o elemento do alerta com WebDriverWait
-                alerta_close_button = WebDriverWait(self.driver, 5).until(
+                # Se não encontrado, tentar novamente usando WebDriverWait que irá esperar o elemento está presente
+                alerta_close_button = WebDriverWait(self.driver, 2).until(
                     EC.element_to_be_clickable((By.XPATH, "//i[contains(@class, 'fa-times') and contains(@class, 'close')]"))
                 )
                 alerta_close_button.click()
-                logging.info("Alerta de notificação fechado com sucesso após esperar.")
+                logging.info("Alerta de notificação fechado com sucesso após usar WebDriverWait.")
             except TimeoutException:
-                logging.info("Nenhum alerta de notificação encontrado após esperar.")
+                logging.info("Nenhum alerta de notificação encontrado após usar WebDriverWait.")
         except Exception as e:
             logging.error(f"Erro ao tentar fechar o alerta de notificação: {e}")
+
 
     def scroll_into_view(self):
         """Rola a página para visualizar o elemento necessário após processamento."""
         try:
             logging.info("Realizando scrollIntoView para o próximo processamento.")
+            self.driver.execute_script("window.scrollTo(0, 0);")
             # Localizar o elemento 'guia_input'
-            guia_input = self.driver.find_element(By.CSS_SELECTOR, 'div.input-group > input.form-control.small')
+            #guia_input = self.driver.find_element(By.CSS_SELECTOR, 'div.input-group > input.form-control.small')
             # Rolar para o elemento
-            self.driver.execute_script("arguments[0].scrollIntoView(true);", guia_input)
+            #self.driver.execute_script("arguments[0].scrollIntoView(true);", guia_input)
             time.sleep(1)
         except Exception as e:
             logging.error(f"Erro ao executar scrollIntoView: {e}")
@@ -487,7 +491,7 @@ if __name__ == "__main__":
     automacao = VerificationIPASGO(data_handler)
 
     # Defina o intervalo de linhas que deseja processar (números de linhas do Excel, incluindo o cabeçalho)
-    start_line = 2 # Por exemplo, para começar na linha 508 do Excel
+    start_line = 514 # Por exemplo, para começar na linha 508 do Excel
     end_line = len(data_handler.df) + 1  # Até a linha 509 do Excel
 
     # Converter números de linha do Excel para índices do pandas
