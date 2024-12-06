@@ -18,7 +18,7 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 
 # Definir um excepthook para capturar exceções não tratadas
 def excepthook(exc_type, exc_value, exc_traceback):
-    if issubclass(exc_type, KeyboardInterrupt):
+    if issubclass(exc_type, KeyboardInterrupt): 
         # Permite que o KeyboardInterrupt seja tratado normalmente
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
@@ -225,21 +225,41 @@ class VerificationIPASGO(BaseAutomation):
         except TimeoutException:
             logging.info("Nenhum alerta encontrado, continuando o processo.")
 
+
+
     def executar_fluxo_para_linha(self):
-        """Executa o fluxo de interações para a linha atual."""
+        """Executa o fluxo de interações para a linha atual, com a lógica do guia repetido."""
         try:
-            self.Guia_operadora()
+            # Obter o número da guia desta linha
+            numero_guia = self.data_handler.get_value(self.row_index, 'GUIA_COD')
+
+            # Verifica se o número da guia desta linha é o mesmo da linha anterior
+            if numero_guia == self.last_guia:
+                # Se for o mesmo, não chama Guia_operadora novamente
+                logging.info(f"Guia {numero_guia} já foi localizada anteriormente. Pulando 'Guia_operadora()'.")
+            else:
+                # Se for diferente, chamamos Guia_operadora para filtrar a nova guia
+                self.Guia_operadora()
+
+            # Fluxo normal de confirmação
             self.abrir_confirmar_procedimentos()
             self.Clicar_confirmar_procedimento()
             self.fechar_alerta_notificacao()
-            # Após fechar o alerta, fazer scrollIntoView
+
+            # Após concluir a confirmação (fechar_alerta_notificacao), atualizamos o last_guia
+            self.last_guia = numero_guia
+
+            # Agora executa o scroll para preparar o próximo número de guia
             self.scroll_into_view()
+
         except Exception as e:
             error_message = getattr(e, 'msg', str(e))
             logging.error(f"Erro ao executar o fluxo na linha {self.row_index + 2}: {error_message}")
             # Atualizar a coluna 'ERRO' no Excel
             self.data_handler.update_value(self.row_index, 'ERRO', error_message)
             self.data_handler.save()
+
+
 
     def Guia_operadora(self):
         """Função para inserir o número da guia para localizar procedimento usando dados da planilha."""
@@ -273,13 +293,13 @@ class VerificationIPASGO(BaseAutomation):
             confirmar_button.click()
             logging.info("Botão de confirmação clicado com sucesso.")
             time.sleep(2)
-            self.confirmar_data_procedimentos()
+            self.capturar_data_procedimentos()
         except Exception as e:
             error_message = getattr(e, 'msg', str(e))
             logging.error(f"Erro ao tentar confirmar os procedimentos: {error_message}")
             # Não atualizar a coluna 'ERRO' no Excel
 
-    def confirmar_data_procedimentos(self):
+    def capturar_data_procedimentos(self):
         """Captura os textos de confirmação dos procedimentos exibidos no modal e salva em uma lista."""
         try:
             logging.info("Iniciando captura de confirmações dos procedimentos.")
@@ -325,6 +345,8 @@ class VerificationIPASGO(BaseAutomation):
         except Exception as e:
             logging.error(f"Erro ao capturar confirmações: {e}")
 
+
+
     def Clicar_confirmar_procedimento(self):
         """
         Verifica os elementos na lista de confirmações capturada na função anterior.
@@ -335,7 +357,6 @@ class VerificationIPASGO(BaseAutomation):
 
             # Verificar se a lista de status foi preenchida
             if not hasattr(self, 'confirmation_status_list') or not self.confirmation_status_list:
-                logging.error("Lista de status de confirmação está vazia ou não foi definida.")
                 return
 
             # Percorre cada status na lista
@@ -353,8 +374,8 @@ class VerificationIPASGO(BaseAutomation):
                         logging.info(f"Procedimento na posição {position} não está confirmado. Confirmando agora...")
 
                         # Dentro desse item, localizar o elemento para clicar
-                        # O XPath fornecido é: //*[@id="span-cartao-magnetico"]/span[1]
-                        # Tentaremos localizar dentro do item
+                        # O elemento é um XPath fornecido por: //*[@id="span-cartao-magnetico"]/span[1]
+                        
                         try:
                             confirm_button = item.find_element(By.XPATH, './/*[@id="span-cartao-magnetico"]/span[1]')
                         except NoSuchElementException:
@@ -439,6 +460,11 @@ class VerificationIPASGO(BaseAutomation):
 
         except Exception as e:
             logging.error(f"Erro ao processar o procedimento não confirmado: {e}")
+            return
+
+
+
+
 
     def fechar_alerta_notificacao(self):
         """Fecha o alerta de notificação se estiver presente."""
@@ -491,7 +517,7 @@ if __name__ == "__main__":
     automacao = VerificationIPASGO(data_handler)
 
     # Defina o intervalo de linhas que deseja processar (números de linhas do Excel, incluindo o cabeçalho)
-    start_line = 514 # Por exemplo, para começar na linha 508 do Excel
+    start_line = 2 # Por exemplo, para começar na linha 508 do Excel
     end_line = len(data_handler.df) + 1  # Até a linha 509 do Excel
 
     # Converter números de linha do Excel para índices do pandas
