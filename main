@@ -30,6 +30,8 @@ def excepthook(exc_type, exc_value, exc_traceback):
 
 sys.excepthook = excepthook
 
+
+
 class DataHandler:
     def __init__(self, file_path, sheet_name):
         self.file_path = file_path
@@ -74,12 +76,16 @@ class DataHandler:
             error_message = getattr(e, 'message', str(e))
             logging.error(f"Erro ao salvar o arquivo Excel: {error_message}")
 
+
+
 class BaseAutomation:
     def __init__(self):
         """Configurações gerais do WebDriver."""
         self.options = Options()
         self.options.add_argument("--start-maximized")
         self.driver = webdriver.Chrome(options=self.options)
+
+
 
     def wait_for_stability(self, timeout=10, check_interval=1):
         """Espera pela estabilidade da altura da página."""
@@ -90,6 +96,8 @@ class BaseAutomation:
             if new_height == old_height:
                 break
             old_height = new_height
+
+
 
     def safe_click(self, by_locator):
         """Tenta clicar no elemento várias vezes se for interceptado."""
@@ -117,6 +125,8 @@ class BaseAutomation:
                 time.sleep(1)
         raise Exception(f"Não foi possível acessar o elemento após {attempts} tentativas.")
 
+
+
 class VerificationIPASGO(BaseAutomation):
     def __init__(self, data_handler):
         super().__init__()
@@ -131,6 +141,8 @@ class VerificationIPASGO(BaseAutomation):
         self.password = os.environ.get('IPASGO_PASSWORD')
         if not self.username or not self.password:
             raise Exception("As credenciais não foram encontradas nas variáveis de ambiente.")
+
+
 
     def acessar_portal_ipasgo(self):
         """Executa o fluxo principal do IPASGO."""
