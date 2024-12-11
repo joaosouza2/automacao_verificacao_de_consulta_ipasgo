@@ -7,8 +7,8 @@ Este projeto automatiza a verificação de consultas no sistema IPASGO utilizand
 
 ## Estrutura do Projeto
 
-- `version_two_verificacao_ipasgo.py`: Código principal que executa a automação.
-- `BASE_AUTORIZACAO - NOVO 08-08-2024.xlsx`: Arquivo Excel usado para preencher campos automaticamente.
+- `main.py`: Código principal que executa a automação.
+- `Base_confirmação.xlsx`: Arquivo Excel usado para preencher campos automaticamente. (a pasta está dentro da pasta PLANILHAS `C:\Users\SUPERVISÃO ADM\Desktop\RPA_verificação_ipasgo\planilhas`)
 
 ## Tecnologias Utilizadas
 
@@ -47,7 +47,7 @@ Este projeto automatiza a verificação de consultas no sistema IPASGO utilizand
 ## Configurações Necessárias
 
 - **WebDriver:** Certifique-se de configurar corretamente o caminho do ChromeDriver no script colocando o arquivo webdriver do selenium no variável de ambiente do windows.
-- **Credenciais:** Atualize o arquivo de configurações com suas credenciais do sistema IPASGO.
+- **Credenciais:** Atualize o arquivo de configurações com suas credenciais do sistema IPASGO. Pode-se ser definido pela variável de ambiente permanente ou temporária.
 
 ## Licença
 
