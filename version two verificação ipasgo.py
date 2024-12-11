@@ -391,6 +391,7 @@ class VerificationIPASGO(BaseAutomation):
             logging.error(f"Erro ao processar o procedimento não confirmado: {e}")
             return
 
+
     def fechar_alerta_notificacao(self):
         try:
             logging.info("Verificando se o alerta de notificação está presente.")
@@ -411,6 +412,7 @@ class VerificationIPASGO(BaseAutomation):
                     logging.info("Nenhum alerta de notificação encontrado após usar WebDriverWait.")
         except Exception as e:
             logging.error(f"Erro ao tentar fechar o alerta de notificação: {e}")
+
 
     def scroll_into_view(self):
         try:
