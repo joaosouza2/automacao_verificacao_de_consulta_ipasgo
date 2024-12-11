@@ -5,7 +5,23 @@
 
 Para executar o código, basta abrir o aplicativo no notebook VsCode, terá que abrir também a pasta do arquivo do projeto que está localizado no caminho `C:\Users\SUPERVISÃO ADM\Desktop\RPA_verificação_ipasgo`. 
 Para abrir irá: 
-   1- Clicar em abrir p
+
+   1- Clicar em "Abrir a Pasta..." ou  Ctrl+K após isso +O ficando Ctrl+K+O
+
+      1.1 O caminho do arquivo: `C:\Users\SUPERVISÃO ADM\Desktop\RPA_verificação_ipasgo`   
+
+
+   2- Encontrar o arquivo `main.py`, clicar no play no canto superior direito. 
+
+      2.2 aperte Ctrl+j para abrir o terminal. (todas as respostas de execução do arquivo será feito pelo terminal)
+
+      2.3 existem 2 tipos de terminal, sendo nomeados por BASH e PYTHON. Toda vez que abrir o terminal pelo comando Ctrl+j, será automaticamente no terminal BASH. O terminal PYTHON apenas será trocado quando executar o código. O código ele funciona usando o terminal PYTHON, logo quando clicar no play, irá automaticamente abrir nesse terminal. Mas para executar o terminal precisa estar selecionado no BASH ao invés do PYTHON, é confuso, mas é como o código funciona. Logo toda vez que executar o código e quiser executar novamente, terá que fechar o terminal PYTHON, passe a seta do mouse em cima do nome terminal PYTHON que irá aparecer um `X` para que possa fechar o terminal e mudará autoamticamente para o terminal BASH. Outra solução é apenas clicar no "+" no canto inferior direito do terminal, que abrirá um BASH ou PYTHON caso queira selecionar na seta ao lado do "+"
+
+      
+
+
+
+
 
 ## Estrutura do Projeto
 
