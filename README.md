@@ -15,6 +15,9 @@ Este projeto automatiza a verificação de consultas no sistema IPASGO utilizand
 - **Python 3.x**
 - **Selenium WebDriver**
 - **Pandas**
+- **Openpyxl**
+- **time**
+- **os**
 
 ## Funcionalidades
 
